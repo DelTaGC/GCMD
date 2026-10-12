@@ -41,6 +41,13 @@ before bumping TypeScript). In Bash tool calls, `cargo` needs
   whole. Write helper scripts to a file and run them with `bash <path>`.
 - Windows CLI flags in Git Bash need doubled slashes
   (`taskkill //F //IM App.exe`), otherwise MSYS rewrites them as paths.
+- UI checks without a human: `npm run dev` serves the frontend at
+  http://localhost:1420 in a plain browser (no IPC; dev builds expose
+  `window.gcmd.view` to inject text and inspect state). The real Tauri
+  window can be captured and clicked from PowerShell
+  (`System.Drawing` `CopyFromScreen` plus `user32` `SetCursorPos` /
+  `mouse_event`); `SendKeys` reaches the editor but Alt mnemonics do not
+  reach the native menu, so drive menus by mouse.
 
 ## Sub-agents
 
