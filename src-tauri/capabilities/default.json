@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Least-privilege capability for the main window. Add a permission here only together with the command that needs it.",
+  "windows": ["main"],
+  "permissions": ["core:default", "opener:default"]
+}

@@ -1,0 +1,63 @@
+{
+  "name": "gcmd",
+  "private": true,
+  "version": "0.1.0",
+  "description": "GCMD - a lightweight single-document GitHub Flavored Markdown editor",
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "app:dev": "tauri dev",
+    "app:build": "tauri build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "lint": "eslint . && prettier --check . && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
+    "lint:ts": "eslint .",
+    "format": "prettier --write . && cargo fmt --manifest-path src-tauri/Cargo.toml",
+    "format:check": "prettier --check . && cargo fmt --manifest-path src-tauri/Cargo.toml --check",
+    "typecheck": "tsc --noEmit",
+    "spec:extract": "node tools/extract-gfm-spec.mjs",
+    "fixtures:large": "node tools/gen-large-doc.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && npm run test:rust",
+    "prepare": "simple-git-hooks"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.3",
+    "@tauri-apps/plugin-opener": "^2.7.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@tauri-apps/cli": "^2.12.2",
+    "@types/node": "^20.19.0",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.9.10",
+    "simple-git-hooks": "^2.14.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^6.4.4",
+    "vitest": "^3.2.7"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*.{ts,mts,js,mjs}": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{json,md,css,html,yml,yaml}": [
+      "prettier --write"
+    ],
+    "src-tauri/**/*.rs": [
+      "rustfmt --edition 2024"
+    ]
+  }
+}

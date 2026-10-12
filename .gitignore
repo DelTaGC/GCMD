@@ -1,0 +1,32 @@
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Rust (see also src-tauri/.gitignore)
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Generated fixtures (regenerate with `npm run fixtures:large`)
+tests/fixtures/generated/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Session scratch
+prompt.txt
