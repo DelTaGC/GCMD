@@ -1,0 +1,306 @@
+/*
+ * Editor and live-preview styles. Colors reference the variables in
+ * src/styles.css only, so themes swap by changing variables.
+ */
+.cm-editor {
+  height: 100%;
+  font-family: var(--font-editor);
+  font-size: var(--editor-font-size);
+  line-height: 1.6;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+.cm-editor.cm-focused {
+  outline: none;
+}
+
+.cm-editor .cm-scroller {
+  font-family: inherit;
+  line-height: inherit;
+  overflow: auto;
+}
+
+.cm-editor .cm-content {
+  max-width: var(--editor-max-width);
+  margin: 0 auto;
+  padding: 2rem 2.5rem 50vh;
+  caret-color: var(--fg);
+}
+
+.cm-editor .cm-line {
+  padding: 0 2px;
+}
+
+.cm-editor .cm-cursor,
+.cm-editor .cm-dropCursor {
+  border-left-color: var(--fg);
+}
+
+.cm-editor .cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionBackground,
+.cm-editor .cm-content ::selection {
+  background: var(--selection) !important;
+}
+
+.cm-editor .cm-selectionMatch {
+  background: var(--selection-match);
+}
+
+/* Markup characters shown on the active line. */
+.cm-mark {
+  color: var(--fg-muted);
+}
+
+/* Headings */
+.cm-heading {
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--heading);
+}
+.cm-heading-1 {
+  font-size: 2em;
+  padding-top: 0.6em;
+  padding-bottom: 0.2em;
+}
+.cm-heading-2 {
+  font-size: 1.55em;
+  padding-top: 0.5em;
+  padding-bottom: 0.15em;
+}
+.cm-heading-3 {
+  font-size: 1.3em;
+  padding-top: 0.4em;
+}
+.cm-heading-4 {
+  font-size: 1.12em;
+  padding-top: 0.3em;
+}
+.cm-heading-5 {
+  font-size: 1em;
+  padding-top: 0.3em;
+}
+.cm-heading-6 {
+  font-size: 0.95em;
+  padding-top: 0.3em;
+  color: var(--fg-muted);
+}
+.cm-setext-underline {
+  color: var(--fg-muted);
+  line-height: 1;
+}
+
+/* Inline */
+.cm-em {
+  font-style: italic;
+}
+.cm-strong {
+  font-weight: 700;
+}
+.cm-strike {
+  text-decoration: line-through;
+  color: var(--fg-muted);
+}
+.cm-inline-code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+.cm-link {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--link) 40%, transparent);
+  text-underline-offset: 2px;
+}
+.cm-url {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+.cm-image {
+  color: var(--fg-muted);
+}
+.cm-html {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+.cm-link-reference {
+  color: var(--fg-muted);
+}
+
+/* Lists */
+.cm-bullet {
+  color: var(--fg-muted);
+}
+.cm-list-mark {
+  color: var(--fg-muted);
+}
+.cm-task-checkbox {
+  margin: 0 0.45em 0 0;
+  vertical-align: -0.1em;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.cm-task-marker {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+}
+.cm-task-done {
+  color: var(--fg-muted);
+  text-decoration: line-through;
+}
+
+/* Blockquotes */
+.cm-quote-line {
+  border-left: 3px solid var(--quote-border);
+  padding-left: 0.6em;
+  color: var(--fg-muted);
+}
+.cm-quote-mark {
+  color: var(--quote-border);
+}
+
+/* Thematic break */
+.cm-hr {
+  display: inline-block;
+  width: 100%;
+  height: 0;
+  border-top: 2px solid var(--border);
+  vertical-align: middle;
+}
+
+/* Code blocks */
+.cm-code-line {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  line-height: 1.5;
+  background: var(--code-bg);
+  padding-left: 0.8em;
+  padding-right: 0.8em;
+}
+.cm-code-first {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  padding-top: 0.3em;
+}
+.cm-code-last {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  padding-bottom: 0.3em;
+}
+.cm-code-label {
+  color: var(--fg-muted);
+  font-size: 0.8em;
+  text-transform: lowercase;
+  user-select: none;
+}
+.cm-code-info {
+  color: var(--fg-muted);
+}
+
+/* Tables (raw in phase 2) */
+.cm-table-line {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* Syntax highlighting inside code blocks (classHighlighter tok-* classes). */
+.cm-code-line .tok-keyword,
+.cm-code-line .tok-modifier,
+.cm-code-line .tok-controlKeyword,
+.cm-code-line .tok-operatorKeyword {
+  color: var(--tok-keyword);
+}
+.cm-code-line .tok-string,
+.cm-code-line .tok-string2,
+.cm-code-line .tok-regexp,
+.cm-code-line .tok-special {
+  color: var(--tok-string);
+}
+.cm-code-line .tok-comment,
+.cm-code-line .tok-lineComment,
+.cm-code-line .tok-blockComment,
+.cm-code-line .tok-docComment {
+  color: var(--tok-comment);
+  font-style: italic;
+}
+.cm-code-line .tok-number,
+.cm-code-line .tok-bool,
+.cm-code-line .tok-atom,
+.cm-code-line .tok-literal {
+  color: var(--tok-number);
+}
+.cm-code-line .tok-typeName,
+.cm-code-line .tok-className,
+.cm-code-line .tok-namespace,
+.cm-code-line .tok-standard {
+  color: var(--tok-type);
+}
+.cm-code-line .tok-function,
+.cm-code-line .tok-definition,
+.cm-code-line .tok-macroName {
+  color: var(--tok-function);
+}
+.cm-code-line .tok-variableName,
+.cm-code-line .tok-propertyName,
+.cm-code-line .tok-attributeName,
+.cm-code-line .tok-labelName {
+  color: var(--tok-variable);
+}
+.cm-code-line .tok-tagName,
+.cm-code-line .tok-angleBracket {
+  color: var(--tok-tag);
+}
+.cm-code-line .tok-meta,
+.cm-code-line .tok-processingInstruction,
+.cm-code-line .tok-punctuation,
+.cm-code-line .tok-operator {
+  color: var(--tok-meta);
+}
+.cm-code-line .tok-invalid {
+  color: var(--tok-invalid);
+}
+
+/* Search panel */
+.cm-editor .cm-panels {
+  background: var(--panel-bg);
+  color: var(--fg);
+  border-color: var(--border);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+}
+.cm-editor .cm-panels-top {
+  border-bottom: 1px solid var(--border);
+}
+.cm-editor .cm-panel.cm-search {
+  padding: 6px 10px;
+}
+.cm-editor .cm-panel.cm-search input,
+.cm-editor .cm-panel.cm-search button {
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: 0 3px 2px 0;
+}
+.cm-editor .cm-panel.cm-search button {
+  background-image: none;
+  cursor: pointer;
+}
+.cm-editor .cm-panel.cm-search button:hover {
+  background: var(--code-bg);
+}
+.cm-editor .cm-panel.cm-search label {
+  margin-right: 0.6em;
+}
+.cm-editor .cm-searchMatch {
+  background: var(--search-match);
+}
+.cm-editor .cm-searchMatch-selected {
+  background: var(--search-match-selected);
+}

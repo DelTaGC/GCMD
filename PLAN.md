@@ -200,7 +200,7 @@ Each phase ends with: tests green, lint clean, a manual verification checklist r
 
 - **Done when:** fresh clone + `npm install` + `npm run tauri dev` shows a window; hooks block an unformatted commit; first commit made.
 
-### Phase 2 — Usable editor (daily-use candidate)
+### Phase 2 — Usable editor (daily-use candidate) — DONE 2026-10-12
 
 - Rust: `document.rs` read/write with encoding, BOM, EOL, trailing-newline preservation and unit tests; `cli.rs` argv + macOS open events; native menu with New/Open/Save/Save As/Recent/Exit, View: sidebar (placeholder), dark/light toggle; window-state plugin; `fileAssociations` for `.md`/`.markdown`.
 - Frontend: CodeMirror 6 with Lezer GFM; live preview for headings, emphasis, strong, inline code, strikethrough, links, autolinks, lists, task checkboxes (clickable), blockquotes, horizontal rules, fenced code with core-language highlighting; dirty marker; close prompt; light and dark themes with the menu toggle; keymap table v1 (formatting + Ctrl+D + VS Code line moves); find/replace (CodeMirror built-in).

@@ -17,6 +17,10 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   through a registry `{ id, title, run }`. Add the command, then bind it in
   `keymap.ts`, then expose it in menu/quickbar. Never inline a transaction in
   chrome code.
+- `app/session.ts` owns the open document (path, save metadata, dirty flag)
+  and the open/save/new/close flows; it registers the `file.*`, `view.*`
+  and `help.*` commands. Menu events arrive as command ids (`ipc/events.ts`)
+  and `main.ts` just runs them.
 - `ipc/`: the only module allowed to import `@tauri-apps/api` or plugins.
   Each Rust command gets a typed wrapper function with the same name.
 - `chrome/`: plain DOM builders returning an element plus an `update()`;
@@ -35,7 +39,11 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   limited to `view.visibleRanges`. Never walk the whole tree on every update
   except for the sidebar outline, which is debounced.
 - Replaced ranges must be atomic (`EditorView.atomicRanges`) so the cursor
-  never lands inside hidden markup.
+  never lands inside hidden markup. `livePreview/decorate.ts` does this:
+  a family is a pure `NodeVisitor` that records into a `Collector`, and
+  `livePreviewFamily(visitor)` wraps it into the view plugin.
+- Plugin decorations must not span line breaks; a fence line is replaced
+  from `line.from` to `line.to` only.
 - Clicking a rendered widget moves the cursor into the block, which makes the
   block active and reveals its source. That is the only "edit mode" switch.
 - A decoration bug that changes text is a release blocker.
@@ -45,7 +53,9 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
 1. Create `editor/livePreview/<name>.ts` exporting an `Extension`.
 2. Register it in `editor/create.ts`.
 3. Add the construct to `tests/fixtures/sample.md` if missing.
-4. Unit-test the range computation with a plain `EditorState` (no DOM).
+4. Unit-test the range computation with a plain `EditorState` (no DOM):
+   `editor/testing.ts` has `stateWith(doc, cursor)` and `kinds(output)`;
+   see `livePreview/families.test.ts`.
 5. Add a checklist line in `docs/checklists/` for the visual behavior.
 
 ## Performance

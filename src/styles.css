@@ -1,26 +1,73 @@
 /*
- * Base styles. Theme colors are CSS custom properties so the dark/light
- * toggle (phase 2) and user settings (later) only swap variables.
+ * Base styles and theme variables. Everything color-related is a custom
+ * property so the dark/light toggle and user settings (later) only swap
+ * variables. The editor styles live in src/editor/theme/editor.css.
  */
 :root {
   color-scheme: light;
   --bg: #ffffff;
   --fg: #1f2328;
-  --fg-muted: #656d76;
+  --fg-muted: #6e7781;
+  --heading: #1f2328;
   --border: #d0d7de;
   --accent: #0969da;
+  --link: #0969da;
+  --code-bg: #f3f5f7;
+  --quote-border: #d0d7de;
+  --panel-bg: #f6f8fa;
+  --selection: #b4d7ff;
+  --selection-match: rgba(9, 105, 218, 0.15);
+  --search-match: rgba(255, 213, 0, 0.45);
+  --search-match-selected: rgba(255, 150, 0, 0.6);
+  --banner-info: #ddf4ff;
+  --banner-warning: #fff8c5;
+  --banner-error: #ffebe9;
+  --tok-keyword: #cf222e;
+  --tok-string: #0a3069;
+  --tok-comment: #6e7781;
+  --tok-number: #0550ae;
+  --tok-type: #953800;
+  --tok-function: #8250df;
+  --tok-variable: #1f2328;
+  --tok-tag: #116329;
+  --tok-meta: #57606a;
+  --tok-invalid: #cf222e;
   --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-editor: var(--font-ui);
   --font-mono: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  --editor-font-size: 16px;
+  --editor-max-width: 52rem;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #0d1117;
   --fg: #e6edf3;
-  --fg-muted: #8d96a0;
+  --fg-muted: #8b949e;
+  --heading: #f0f6fc;
   --border: #30363d;
   --accent: #4493f8;
+  --link: #4493f8;
+  --code-bg: #161b22;
+  --quote-border: #3d444d;
+  --panel-bg: #161b22;
+  --selection: #264f78;
+  --selection-match: rgba(68, 147, 248, 0.2);
+  --search-match: rgba(210, 153, 34, 0.4);
+  --search-match-selected: rgba(255, 150, 0, 0.55);
+  --banner-info: #0c2d6b;
+  --banner-warning: #3b2e00;
+  --banner-error: #4c1a1a;
+  --tok-keyword: #ff7b72;
+  --tok-string: #a5d6ff;
+  --tok-comment: #8b949e;
+  --tok-number: #79c0ff;
+  --tok-type: #ffa657;
+  --tok-function: #d2a8ff;
+  --tok-variable: #e6edf3;
+  --tok-tag: #7ee787;
+  --tok-meta: #8b949e;
+  --tok-invalid: #ff7b72;
 }
 
 html,
@@ -31,21 +78,70 @@ body {
   color: var(--fg);
   font-family: var(--font-ui);
   font-size: 16px;
+  overflow: hidden;
 }
 
 #app {
   display: grid;
   grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
   height: 100%;
 }
 
+.banner {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.banner[hidden] {
+  display: none;
+}
+.banner[data-kind="info"] {
+  background: var(--banner-info);
+}
+.banner[data-kind="warning"] {
+  background: var(--banner-warning);
+}
+.banner[data-kind="error"] {
+  background: var(--banner-error);
+}
+.banner-text {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.banner-close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
 .editor-host {
-  overflow: auto;
-  padding: 1rem;
+  grid-row: 2;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sidebar {
+  grid-row: 2;
   width: 260px;
   border-left: 1px solid var(--border);
   overflow: auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+.sidebar[hidden] {
+  display: none;
+}
+.sidebar-note {
+  color: var(--fg-muted);
+  font-size: 0.9rem;
+  margin: 0;
 }

@@ -1,0 +1,251 @@
+/**
+ * Range computation for every live-preview family, on a plain EditorState.
+ */
+import type { TransactionSpec } from "@codemirror/state";
+import { describe, expect, it } from "vitest";
+import { kinds, listDecorations, stateWith } from "../testing";
+import { visitBlockquote } from "./blockquote";
+import { infoLanguage, visitCodeFence } from "./codeFence";
+import { computeFamily, type FamilyOutput } from "./decorate";
+import { visitHeadings } from "./headings";
+import { visitHr } from "./hr";
+import { visitInline } from "./inline";
+import { toggleTaskMarkerAt, visitLists } from "./lists";
+import { visitTable } from "./table";
+
+type Visitor = Parameters<typeof computeFamily>[2];
+
+function run(visit: Visitor, doc: string, cursor?: number): FamilyOutput {
+  const state = stateWith(doc, cursor);
+  return computeFamily(state, [{ from: 0, to: doc.length }], visit);
+}
+
+describe("headings", () => {
+  it("hides the ATX marker and its space when inactive", () => {
+    const out = run(visitHeadings, "## Title\n\ntext", 12);
+    expect(kinds(out)).toEqual(["line:cm-heading cm-heading-2@0-0", "hide@0-3"]);
+    expect(kinds({ decorations: out.atomic, atomic: out.atomic })).toEqual(["hide@0-3"]);
+  });
+
+  it("shows the marker when the cursor is on the heading line", () => {
+    const out = run(visitHeadings, "## Title\n\ntext", 5);
+    expect(kinds(out)).toEqual(["line:cm-heading cm-heading-2@0-0"]);
+  });
+
+  it("hides a closing sequence with its leading spaces", () => {
+    const out = run(visitHeadings, "# Title ##\n\ntext", 14);
+    expect(kinds(out)).toEqual(["line:cm-heading cm-heading-1@0-0", "hide@0-2", "hide@7-10"]);
+  });
+
+  it("styles setext headings and mutes the underline", () => {
+    const out = run(visitHeadings, "Title\n=====\n\ntext", 15);
+    expect(kinds(out)).toEqual([
+      "line:cm-heading cm-heading-1@0-0",
+      "line:cm-setext-underline@6-6",
+      "mark:cm-mark@6-11",
+    ]);
+  });
+});
+
+describe("inline", () => {
+  it("hides emphasis and strong markers when inactive", () => {
+    const doc = "a **b** *c*\n\nx";
+    const out = run(visitInline, doc, 13);
+    expect(kinds(out)).toEqual([
+      "hide@2-4",
+      "mark:cm-strong@2-7",
+      "hide@5-7",
+      "hide@8-9",
+      "mark:cm-em@8-11",
+      "hide@10-11",
+    ]);
+  });
+
+  it("keeps markers visible on the active line", () => {
+    const out = run(visitInline, "a **b**", 0);
+    expect(kinds(out)).toEqual(["mark:cm-strong@2-7"]);
+  });
+
+  it("hides inline code backticks, strikethrough tildes and escapes", () => {
+    const doc = "`c` ~~s~~ \\*\n\nx";
+    const out = run(visitInline, doc, 15);
+    expect(kinds(out)).toEqual([
+      "hide@0-1",
+      "mark:cm-inline-code@0-3",
+      "hide@2-3",
+      "hide@4-6",
+      "mark:cm-strike@4-9",
+      "hide@7-9",
+      "hide@10-11",
+    ]);
+  });
+
+  it("shows only the link text when inactive and everything when active", () => {
+    const doc = '[text](https://x.y "t")\n\nx';
+    const inactive = run(visitInline, doc, 26);
+    expect(kinds(inactive)).toEqual(["hide@0-1", "mark:cm-link@1-5", "hide@5-23"]);
+    const active = run(visitInline, doc, 2);
+    expect(kinds(active)).toEqual([
+      "mark:cm-mark@0-1",
+      "mark:cm-link@1-5",
+      "mark:cm-mark@5-6",
+      "mark:cm-mark@6-7",
+      "mark:cm-url@7-18",
+      "mark:cm-mark@22-23",
+    ]);
+  });
+
+  it("styles bare autolinks and hides angle-bracket autolink marks", () => {
+    const doc = "see https://a.b and <https://c.d>\n\nx";
+    const out = run(visitInline, doc, 36);
+    expect(kinds(out)).toEqual([
+      "mark:cm-link@4-15",
+      "hide@20-21",
+      "mark:cm-link@21-32",
+      "hide@32-33",
+    ]);
+  });
+
+  it("styles a reference link like an inline one", () => {
+    const doc = "[t][r]\n\n[r]: https://x.y";
+    const out = run(visitInline, doc, 20);
+    expect(kinds(out)).toEqual([
+      "hide@0-1",
+      "mark:cm-link@1-2",
+      "hide@2-6",
+      "mark:cm-link-reference@8-24",
+    ]);
+  });
+});
+
+describe("lists", () => {
+  it("replaces bullets with a glyph when inactive and styles ordered marks", () => {
+    const doc = "- a\n- b\n1. c";
+    const out = run(visitLists, doc, 10);
+    expect(kinds(out)).toEqual([
+      "widget:BulletWidget@0-1",
+      "widget:BulletWidget@4-5",
+      "mark:cm-list-mark@8-10",
+    ]);
+  });
+
+  it("shows the raw bullet on the active line", () => {
+    const out = run(visitLists, "- a\n- b", 1);
+    expect(kinds(out)).toEqual(["mark:cm-list-mark@0-1", "widget:BulletWidget@4-5"]);
+  });
+
+  it("renders a checkbox in place of bullet and marker when inactive", () => {
+    const doc = "- [ ] open\n- [x] done\n\nx";
+    const out = run(visitLists, doc, 24);
+    expect(kinds(out)).toEqual([
+      "hide@0-2",
+      "widget:CheckboxWidget@2-6",
+      "hide@11-13",
+      "widget:CheckboxWidget@13-17",
+      "mark:cm-task-done@13-21",
+    ]);
+  });
+
+  it("shows raw markers on the active task line", () => {
+    const out = run(visitLists, "- [ ] open", 8);
+    expect(kinds(out)).toEqual(["mark:cm-list-mark@0-1", "mark:cm-task-marker@2-5"]);
+  });
+
+  it("toggles a task marker in the text", () => {
+    const state = stateWith("- [ ] open");
+    let text = "";
+    const target = {
+      state,
+      dispatch: (tr: TransactionSpec) => {
+        text = state.update(tr).state.doc.toString();
+      },
+    };
+    expect(toggleTaskMarkerAt(target, 2)).toBe(true);
+    expect(text).toBe("- [x] open");
+    expect(toggleTaskMarkerAt(target, 0)).toBe(false);
+  });
+});
+
+describe("blockquote", () => {
+  it("adds one line class per quoted line and styles the marks", () => {
+    const doc = "> a\n> > b\n\nx";
+    const out = run(visitBlockquote, doc);
+    const entries = listDecorations(out).map((e) => e.kind + "@" + String(e.from));
+    expect(entries).toEqual([
+      "line:cm-quote-line@0",
+      "mark:cm-quote-mark@0",
+      "line:cm-quote-line@4",
+      "mark:cm-quote-mark@4",
+      "mark:cm-quote-mark@6",
+    ]);
+  });
+});
+
+describe("hr", () => {
+  it("renders a rule when inactive and muted source when active", () => {
+    const doc = "a\n\n---\n\nb";
+    expect(kinds(run(visitHr, doc, 0))).toEqual(["widget:RuleWidget@3-6"]);
+    expect(kinds(run(visitHr, doc, 4))).toEqual(["mark:cm-mark@3-6"]);
+  });
+});
+
+describe("code fences", () => {
+  const doc = "p\n\n```ts\nlet a = 1;\n```\n\nq";
+  // Fence: 3..23; opening line 3..8, code line 9..19, closing line 20..23.
+
+  it("replaces both fence lines when inactive", () => {
+    const out = run(visitCodeFence, doc, 0);
+    expect(kinds(out)).toEqual([
+      "line:cm-code-line cm-code-first@3-3",
+      "widget:LanguageLabelWidget@3-8",
+      "line:cm-code-line@9-9",
+      "line:cm-code-line cm-code-last@20-20",
+      "widget:EmptyWidget@20-23",
+    ]);
+  });
+
+  it("shows the fences when the selection is inside the block", () => {
+    const out = run(visitCodeFence, doc, 12);
+    expect(kinds(out)).toEqual([
+      "line:cm-code-line cm-code-first@3-3",
+      "mark:cm-mark@3-6",
+      "mark:cm-code-info@6-8",
+      "line:cm-code-line@9-9",
+      "line:cm-code-line cm-code-last@20-20",
+      "mark:cm-mark@20-23",
+    ]);
+  });
+
+  it("does not empty the last line of an unterminated fence", () => {
+    const out = run(visitCodeFence, "```\ncode", 0);
+    expect(kinds(out)).toEqual([
+      "line:cm-code-line cm-code-first@0-0",
+      "mark:cm-mark@0-3",
+      "line:cm-code-line cm-code-last@4-4",
+    ]);
+    const inactive = run(visitCodeFence, "x\n\n```\ncode", 0);
+    expect(kinds(inactive)).toContain("widget:LanguageLabelWidget@3-6");
+    expect(kinds(inactive)).not.toContain("widget:EmptyWidget@7-11");
+  });
+
+  it("styles indented code blocks", () => {
+    const out = run(visitCodeFence, "p\n\n    code\n", 0);
+    expect(kinds(out)).toEqual(["line:cm-code-line cm-code-first cm-code-last@3-3"]);
+  });
+
+  it("extracts the language from an info string", () => {
+    expect(infoLanguage("ts")).toBe("ts");
+    expect(infoLanguage("  json {meta}")).toBe("json");
+    expect(infoLanguage("")).toBe("");
+  });
+});
+
+describe("table placeholder", () => {
+  it("marks table lines and delimiters", () => {
+    const doc = "| a |\n|---|\n| 1 |";
+    const out = run(visitTable, doc);
+    const entries = listDecorations(out);
+    expect(entries.filter((e) => e.kind.startsWith("line:"))).toHaveLength(3);
+    expect(entries.filter((e) => e.kind === "mark:cm-mark")).toHaveLength(5);
+  });
+});
