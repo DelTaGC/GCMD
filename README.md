@@ -14,7 +14,7 @@ Phase 1 (foundation) complete. See [PLAN.md](PLAN.md) for the roadmap and
 
 ## Prerequisites
 
-- Node.js 20.9+ (20.10 works; Node 22 LTS unlocks newer tooling versions)
+- Node.js 22.22+ (24 recommended, see `.nvmrc`)
 - Rust stable with the MSVC toolchain on Windows (`rustup`)
 - Windows: Visual Studio Build Tools, "Desktop development with C++" workload
 - Linux: `libwebkit2gtk-4.1-dev`, `build-essential`, `libssl-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`

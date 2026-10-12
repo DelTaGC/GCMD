@@ -29,9 +29,10 @@ npm run spec:extract   # regenerate tests/fixtures/gfm/spec.json from spec.txt
 npm run fixtures:large # generate tests/fixtures/generated/large.md (1 MB)
 ```
 
-Node 20.10 on the dev machine pins Vite 6, Vitest 3, ESLint 9, lint-staged 15.
-Do not bump those majors without checking `engines.node` on npm first.
-In Bash tool calls, `cargo` needs `export PATH="$HOME/.cargo/bin:$PATH"`.
+Node 24 (see `.nvmrc`, `engines.node` >= 22.22.1). TypeScript stays on the
+newest major that `typescript-eslint` supports (check its `peerDependencies`
+before bumping TypeScript). In Bash tool calls, `cargo` needs
+`export PATH="$HOME/.cargo/bin:$PATH"`.
 
 ## Layout
 

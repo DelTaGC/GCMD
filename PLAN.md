@@ -101,7 +101,7 @@ menus come from Tauri's menu API, not HTML.
 
 ### Toolchain prerequisites on this machine
 
-- Node 20.10 is installed. Vite 6 works on it; Vite 7 needs Node 20.19+. Pin Vite 6 or upgrade Node.
+- Node 24 is installed (`.nvmrc`); current Vite, Vitest, ESLint, and lint-staged run on it. TypeScript follows what `typescript-eslint` supports.
 - Rust is **not** installed: `rustup` (stable, MSVC target) and the Visual Studio Build Tools "Desktop development with C++" workload are required before `cargo` can build. WebView2 runtime is already part of Windows 11.
 - macOS and Linux builds happen later on those machines (or CI); no signing for now.
 
@@ -174,7 +174,7 @@ Each phase ends with: tests green, lint clean, a manual verification checklist r
 ### Phase 0 — Prerequisites (you) — DONE 2026-10-12
 
 - Install `rustup` (stable-msvc) and Visual Studio Build Tools with the C++ workload.
-- Optional: upgrade Node to 20.19+ or 22 LTS; otherwise Vite 6 is pinned.
+- Node 24 installed (done).
 - **Done when:** `cargo --version` and `node --version` both work in a fresh terminal.
 
 ### Phase 1 — Foundation and CLAUDE.md files — DONE 2026-10-12
