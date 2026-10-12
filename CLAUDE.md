@@ -34,6 +34,29 @@ newest major that `typescript-eslint` supports (check its `peerDependencies`
 before bumping TypeScript). In Bash tool calls, `cargo` needs
 `export PATH="$HOME/.cargo/bin:$PATH"`.
 
+## Agent environment (Windows, Git Bash)
+
+- Create files with the Write tool, not heredocs: a multi-line
+  `cat > file <<'EOF'` whose content contains an apostrophe is rejected
+  whole. Write helper scripts to a file and run them with `bash <path>`.
+- Windows CLI flags in Git Bash need doubled slashes
+  (`taskkill //F //IM App.exe`), otherwise MSYS rewrites them as paths.
+
+## Sub-agents
+
+Delegate to a sub-agent when it keeps your context small (have it return
+results and a summary, not test logs), lets independent work run in parallel,
+or moves a simple, well-specified change to a cheaper model or lower effort.
+Pick the cheapest model and effort that will still succeed. Use the top model
+tier for sub-agents sparingly: a few of them can exhaust the 5-hour plan limit.
+
+## Knowledge and docs upkeep
+
+Record knowledge that future sessions need in this repo (a `CLAUDE.md` or
+`docs/`) and commit it, rather than only in local machine memory. When a change
+makes a file in `docs/` or a `CLAUDE.md` inaccurate, update it in the same
+commit.
+
 ## Layout
 
 ```
