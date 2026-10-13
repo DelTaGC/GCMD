@@ -5,7 +5,8 @@ Single-document Markdown reader and editor following GitHub Flavored Markdown
 editor (TypeScript, vanilla DOM, Vite). Live preview over the raw text: the
 buffer _is_ the markdown; markup shows only in the block being edited.
 
-Roadmap and rationale: `PLAN.md`. Decisions: `docs/decisions/`.
+Roadmap and rationale: `PLAN.md`. Decisions: `docs/decisions/`. Budgets and
+measurements: `docs/perf.md`. Parser deviations: `docs/known-deviations.md`.
 Area-specific rules: `src/CLAUDE.md` (frontend), `src-tauri/CLAUDE.md` (Rust).
 
 ## Non-goals
@@ -26,7 +27,11 @@ npm run lint           # eslint + prettier --check + clippy -D warnings
 npm run format         # prettier --write + cargo fmt
 npm run check          # typecheck + lint + both test suites; run before every commit
 npm run spec:extract   # regenerate tests/fixtures/gfm/spec.json from spec.txt
-npm run fixtures:large # generate tests/fixtures/generated/large.md (1 MB)
+npm run fixtures:large # generate tests/fixtures/generated/large.md (1 MB); -- --mb 0.55 --out 20k-lines.md
+npm run bench          # DOM-free timings over the generated fixtures (docs/perf.md)
+npm run linux:image    # build the Docker image for Linux checks and bundles (once)
+npm run linux:check    # npm run check on Linux inside Docker
+npm run linux:build    # .deb and AppImage -> src-tauri/target/linux-bundle/
 ```
 
 Node 24 (see `.nvmrc`, `engines.node` >= 22.22.1). TypeScript stays on the
@@ -104,7 +109,9 @@ docs/decisions/       ADRs; docs/checklists/ manual UI verification per phase
 5. **Lazy heavy things.** Mermaid, non-core languages, anything over ~100 KB:
    dynamic `import()` only. Startup bundle under 1 MB gzip. Cold start to
    editable under 1 s; 1 MB document opens under 500 ms; typing latency under
-   16 ms at the end of a 20k-line file.
+   16 ms at the end of a 20k-line file. `docs/perf.md` says how each is
+   measured and holds the last numbers; re-measure after parser,
+   live-preview or bundle changes.
 6. **No process-level state.** No single-instance plugin. No session restore.
    Only window geometry, settings, and the recent-files list persist.
 7. **Versioned settings** (`schemaVersion`) in the OS app-config dir, migrated

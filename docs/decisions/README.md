@@ -13,3 +13,5 @@ before introducing a new technology or changing one of these.
 | [0006](0006-tauri-plugins-and-settings.md)       | Dialog and window-state plugins; own versioned settings           |
 | [0007](0007-block-widgets-mermaid-and-assets.md) | Block widgets as state fields; lazy mermaid; per-file asset scope |
 | [0008](0008-file-watcher.md)                     | `notify` watcher on the parent directory; the frontend reconciles |
+| [0009](0009-cross-platform-builds.md)            | Linux builds through Docker, all platforms through GitHub Actions |
+| [0009](0009-cross-platform-builds.md)            | Linux builds through Docker, all platforms through GitHub Actions |

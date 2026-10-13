@@ -24,6 +24,10 @@
     "typecheck": "tsc --noEmit",
     "spec:extract": "node tools/extract-gfm-spec.mjs",
     "fixtures:large": "node tools/gen-large-doc.mjs",
+    "bench": "vitest run --config vitest.bench.config.ts --reporter=verbose",
+    "linux:image": "docker build -t gcmd-linux-build tools/linux",
+    "linux:check": "bash tools/linux/run.sh check",
+    "linux:build": "bash tools/linux/run.sh build",
     "check": "npm run typecheck && npm run lint && npm test && npm run test:rust",
     "prepare": "simple-git-hooks"
   },

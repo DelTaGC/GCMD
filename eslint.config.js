@@ -16,7 +16,7 @@ export default tseslint.config(
   },
   // Typed linting for application code.
   {
-    files: ["src/**/*.ts", "vite.config.ts"],
+    files: ["src/**/*.ts", "tests/perf/**/*.ts", "vite.config.ts", "vitest.bench.config.ts"],
     extends: [
       js.configs.recommended,
       ...tseslint.configs.strictTypeChecked,

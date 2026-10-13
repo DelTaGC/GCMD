@@ -4,8 +4,12 @@
  * reach the menu. This listener catches them and asks the Rust side to pop
  * the matching menu up under its title; from there the native menu handles
  * arrows, letters and Escape itself.
+ *
+ * Not installed on macOS: the menu bar is the system's (no mnemonics) and
+ * Option+letter types special characters there.
  */
 import { openMenu } from "../ipc/app";
+import { isMac } from "../ipc/env";
 
 const MNEMONICS: Readonly<Record<string, string>> = {
   f: "menu.file",
@@ -15,6 +19,11 @@ const MNEMONICS: Readonly<Record<string, string>> = {
 };
 
 export function installMenuMnemonics(target: Window = window): () => void {
+  if (isMac()) {
+    return () => {
+      // Nothing was installed.
+    };
+  }
   const onKeyDown = (event: KeyboardEvent): void => {
     if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
       return;

@@ -10,7 +10,7 @@ import { installMenuMnemonics } from "./chrome/menuKeys";
 import { createSidebar } from "./chrome/sidebar";
 import { createThemeController } from "./chrome/theme";
 import { runCommand } from "./editor/commands";
-import { createEditor } from "./editor/create";
+import { createEditor, replaceDocument } from "./editor/create";
 import { launchArgs } from "./ipc/app";
 import { onFileChanged, onMenu, onOpenFile } from "./ipc/events";
 import { getSettings, type Settings } from "./ipc/settings";
@@ -81,8 +81,11 @@ async function bootstrap(): Promise<void> {
   };
 
   if (import.meta.env.DEV) {
-    // Debug handle for the browser console and automated UI checks.
-    Object.assign(window, { gcmd: { view, session: current, outline, sidebar, banner } });
+    // Debug handle for the browser console and automated UI checks
+    // (`replaceDocument` loads text without IPC, see docs/perf.md).
+    Object.assign(window, {
+      gcmd: { view, session: current, outline, sidebar, banner, replaceDocument },
+    });
   }
   if (!isTauri()) {
     // Plain browser (`npm run dev`): no menu, no files; the editor still works.

@@ -62,13 +62,42 @@ fn recent_submenu<R: Runtime>(
     Ok(submenu)
 }
 
-fn file_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Submenu<R>> {
-    let exit_accelerator = if cfg!(target_os = "windows") {
-        None
-    } else {
-        Some("CmdOrCtrl+Q")
-    };
+/// Accelerator of the Exit / Quit item. Windows has no convention for it
+/// (Alt+F4 closes the window anyway); Linux and macOS expect Ctrl+Q / Cmd+Q.
+/// It is kept in a constant so the keymap-sync test (`keymap.test.ts`) does
+/// not see it as a shortcut the editor must bind.
+const EXIT_ACCELERATOR: Option<&str> = if cfg!(target_os = "windows") {
+    None
+} else {
+    Some("CmdOrCtrl+Q")
+};
+
+/// The application menu macOS shows under the app name as the first menu.
+/// Quit goes through our `file.exit` command (not the predefined item) so the
+/// unsaved-changes prompt still runs.
+#[cfg(target_os = "macos")]
+fn app_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
     Submenu::with_id_and_items(
+        app,
+        "menu.app",
+        "GCMD",
+        true,
+        &[
+            &item(app, "help.about", "About GCMD", None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::services(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::hide(app, None)?,
+            &PredefinedMenuItem::hide_others(app, None)?,
+            &PredefinedMenuItem::show_all(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &item(app, "file.exit", "Quit GCMD", EXIT_ACCELERATOR)?,
+        ],
+    )
+}
+
+fn file_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Submenu<R>> {
+    let submenu = Submenu::with_id_and_items(
         app,
         "menu.file",
         "&File",
@@ -86,10 +115,16 @@ fn file_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
             &PredefinedMenuItem::separator(app)?,
             &item(app, "file.save", "&Save", Some("CmdOrCtrl+S"))?,
             &item(app, "file.saveAs", "Save &As...", Some("CmdOrCtrl+Shift+S"))?,
-            &PredefinedMenuItem::separator(app)?,
-            &item(app, "file.exit", "E&xit", exit_accelerator)?,
         ],
-    )
+    )?;
+    // On macOS, Quit lives in the application menu.
+    if !cfg!(target_os = "macos") {
+        submenu.append_items(&[
+            &PredefinedMenuItem::separator(app)?,
+            &item(app, "file.exit", "E&xit", EXIT_ACCELERATOR)?,
+        ])?;
+    }
+    Ok(submenu)
 }
 
 fn format_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
@@ -152,44 +187,63 @@ fn line_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
     )
 }
 
-fn edit_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
-    // Undo/Redo carry no accelerator on purpose: the key must reach the
-    // webview so that an input field (search panel) can handle its own undo.
-    // Every other accelerator here mirrors `src/editor/keymap.ts`; a unit
-    // test on the frontend side keeps the two in sync.
-    Submenu::with_id_and_items(
-        app,
-        "menu.edit",
-        "&Edit",
-        true,
-        &[
+/// Undo/Redo (and on macOS Cut/Copy/Paste/Select All) at the top of Edit.
+///
+/// On Windows and Linux our items carry no accelerator on purpose: the key
+/// must reach the webview so that an input field (search panel) can handle
+/// its own undo. On macOS the opposite holds: `WKWebView` only acts on
+/// Cmd+Z/X/C/V/A when the menu carries the standard items, which route the
+/// selector to the focused element (editor or search input) themselves.
+fn edit_history_items<R: Runtime>(app: &AppHandle<R>, submenu: &Submenu<R>) -> tauri::Result<()> {
+    if cfg!(target_os = "macos") {
+        submenu.append_items(&[
+            &PredefinedMenuItem::undo(app, None)?,
+            &PredefinedMenuItem::redo(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::cut(app, None)?,
+            &PredefinedMenuItem::copy(app, None)?,
+            &PredefinedMenuItem::paste(app, None)?,
+            &PredefinedMenuItem::select_all(app, None)?,
+        ])
+    } else {
+        submenu.append_items(&[
             &item(app, "edit.undo", "&Undo", None)?,
             &item(app, "edit.redo", "&Redo", None)?,
-            &PredefinedMenuItem::separator(app)?,
-            &item(app, "search.find", "&Find...", Some("CmdOrCtrl+F"))?,
-            &item(
-                app,
-                "search.replace",
-                "Find and Re&place...",
-                Some("CmdOrCtrl+H"),
-            )?,
-            &item(app, "search.next", "Find &Next", Some("F3"))?,
-            &item(app, "search.previous", "Find Pre&vious", Some("Shift+F3"))?,
-            &PredefinedMenuItem::separator(app)?,
-            &format_submenu(app)?,
-            &heading_submenu(app)?,
-            &line_submenu(app)?,
-            &PredefinedMenuItem::separator(app)?,
-            &item(app, "list.toggleTask", "Toggle &Task", Some("CmdOrCtrl+L"))?,
-            &item(app, "table.align", "&Align Table", Some("Shift+Alt+F"))?,
-            &item(
-                app,
-                "code.detectLanguage",
-                "Detect &Code Language",
-                Some("Shift+Alt+L"),
-            )?,
-        ],
-    )
+        ])
+    }
+}
+
+fn edit_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
+    // Every accelerator here mirrors `src/editor/keymap.ts`; a unit test on
+    // the frontend side keeps the two in sync.
+    let submenu = Submenu::with_id(app, "menu.edit", "&Edit", true)?;
+    edit_history_items(app, &submenu)?;
+    submenu.append_items(&[
+        &PredefinedMenuItem::separator(app)?,
+        &item(app, "search.find", "&Find...", Some("CmdOrCtrl+F"))?,
+        &item(
+            app,
+            "search.replace",
+            "Find and Re&place...",
+            Some("CmdOrCtrl+H"),
+        )?,
+        &item(app, "search.next", "Find &Next", Some("F3"))?,
+        &item(app, "search.previous", "Find Pre&vious", Some("Shift+F3"))?,
+        &PredefinedMenuItem::separator(app)?,
+        &format_submenu(app)?,
+        &heading_submenu(app)?,
+        &line_submenu(app)?,
+        &PredefinedMenuItem::separator(app)?,
+        &item(app, "list.toggleTask", "Toggle &Task", Some("CmdOrCtrl+L"))?,
+        &item(app, "table.align", "&Align Table", Some("Shift+Alt+F"))?,
+        &item(
+            app,
+            "code.detectLanguage",
+            "Detect &Code Language",
+            Some("Shift+Alt+L"),
+        )?,
+    ])?;
+    Ok(submenu)
 }
 
 fn theme_submenu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Submenu<R>> {
@@ -236,17 +290,19 @@ fn help_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
     )
 }
 
-/// Builds the full menu for the given settings.
+/// Builds the full menu for the given settings. On macOS the application
+/// menu comes first; on Windows and Linux File is the first menu.
 pub fn build<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Menu<R>> {
-    Menu::with_items(
-        app,
-        &[
-            &file_menu(app, settings)?,
-            &edit_menu(app)?,
-            &view_menu(app, settings)?,
-            &help_menu(app)?,
-        ],
-    )
+    let menu = Menu::new(app)?;
+    #[cfg(target_os = "macos")]
+    menu.append(&app_menu(app)?)?;
+    menu.append_items(&[
+        &file_menu(app, settings)?,
+        &edit_menu(app)?,
+        &view_menu(app, settings)?,
+        &help_menu(app)?,
+    ])?;
+    Ok(menu)
 }
 
 /// Pops up the top-level submenu `id` (`menu.file`, ...) below its title in

@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "GCMD - a lightweight single-document GitHub Flavored Markdown editor"
 authors = ["Gaetan Cretton"]
 edition = "2024"
-rust-version = "1.85"
+# Let chains (`if let .. && let ..`) need 1.88; the MSRV-aware resolver also
+# uses this to pick dependency versions, so keep it current.
+rust-version = "1.88"
 
 [lib]
 # The `_lib` suffix is required so the lib name does not clash with the bin

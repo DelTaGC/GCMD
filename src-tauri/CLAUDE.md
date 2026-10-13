@@ -37,6 +37,18 @@ is not OS integration belongs in the TypeScript frontend.
   stays empty (never a static `**`); `resolve_asset` allows each resolved
   image file one by one at runtime (`asset_protocol_scope().allow_file`).
 - Multiple instances are a feature: do not add `tauri-plugin-single-instance`.
+- Menus: accelerators use `CmdOrCtrl` and mirror `src/editor/keymap.ts`
+  (a frontend test parses `menu.rs`, so write them as `Some("...")` literals
+  next to the command id, or as a named constant when the key is menu-only
+  like Exit). macOS gets the application menu and the predefined Edit items
+  in `menu.rs`; keep every `cfg!(target_os)` branch there.
+- `rust-version` in `Cargo.toml` is also what the cargo resolver uses to pick
+  dependency versions; keep it at the oldest toolchain that compiles the
+  code (let chains need 1.88). When `tauri build` reports mismatched npm and
+  crate versions, run `cargo update -p tauri --precise <npm version>`.
+- Linux: `npm run linux:check` runs the whole check suite in Docker
+  (`tools/linux/`); do it before committing changes to paths, the watcher
+  or the menu. macOS builds come from CI only (ADR 0009).
 - Settings and the recent list live outside the install directory (Tauri
   `app_config_dir`) so updates never touch them.
 

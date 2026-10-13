@@ -10,3 +10,5 @@ the light and the dark theme. Each phase adds a file; keep old ones passing.
 | [phase-2-editor.md](phase-2-editor.md)         | Open/save fidelity, live preview, shortcuts, themes  |
 | [phase-3-blocks.md](phase-3-blocks.md)         | Tables, mermaid, fence languages, images, Ctrl+click |
 | [phase-4-navigation.md](phase-4-navigation.md) | Outline sidebar, quickbar, external changes, menus   |
+| [phase-5-quality.md](phase-5-quality.md)       | Performance by feel, Linux and macOS, spec harness   |
+| [phase-5-quality.md](phase-5-quality.md)       | Performance by feel, Linux and macOS, spec harness   |

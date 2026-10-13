@@ -98,5 +98,13 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
 - Vitest, `environment: "node"` by default. Tests that need a DOM set
   `// @vitest-environment jsdom` at the top (add jsdom when first needed).
 - Test files sit next to the code as `<name>.test.ts`.
-- The GFM harness in `spec/` must keep passing counts; a change that lowers
-  the pass count needs an explicit note in the commit message.
+- The GFM harness in `spec/` gates on `KNOWN_FAILURES`: an example outside
+  the list must pass, a listed one must still fail. A new failure needs a
+  fix or a list entry plus a row in `docs/known-deviations.md`; a fixed one
+  is removed from both.
+- Timings live in `tests/perf/*.perf.ts` (`npm run bench`, not part of
+  `npm test`); they print a table and assert loose limits. Record new
+  baselines in `docs/perf.md`.
+- Platform checks: `isMac()` in `ipc/env.ts` is the only platform test;
+  keys use `Mod`, labels come from `formatKey`. Anything Alt+letter is
+  Windows/Linux only.

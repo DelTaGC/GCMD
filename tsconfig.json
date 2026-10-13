@@ -26,5 +26,5 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "tests/perf", "vite.config.ts", "vitest.bench.config.ts"]
 }

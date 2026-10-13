@@ -45,6 +45,7 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+const BACKSLASH_ESCAPE = /\\([!-/:-@[-`{-~])/g;
 const BACKSLASH_OR_REFERENCE =
   /\\([!-/:-@[-`{-~])|&(?:#[xX]([0-9a-fA-F]{1,6})|#([0-9]{1,7})|([A-Za-z][A-Za-z0-9]{1,31}));/g;
 
@@ -240,9 +241,10 @@ function renderLink(ctx: Ctx, line: Line, node: SyntaxNode, mode: Mode): string 
   }
 
   if (url === null) {
-    // No definition: the brackets are literal text.
+    // No definition: the brackets are literal text. Lezer parses nothing
+    // inside the label, so its backslash escapes are resolved here.
     const inner = renderInline(ctx, line, node, open.to, close.from, mode);
-    const tail = renderText(ctx, line, close.to, node.to);
+    const tail = escapeHtml(ctx.src.slice(close.to, node.to).replace(BACKSLASH_ESCAPE, "$1"));
     return `${escapeHtml(ctx.src.slice(open.from, open.to))}${inner}]${tail}`;
   }
 

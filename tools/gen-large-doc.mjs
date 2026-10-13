@@ -1,7 +1,8 @@
-// Generates tests/fixtures/generated/large.md, a ~1 MB / ~20k-line document
+// Generates tests/fixtures/generated/large.md, a ~1 MB / ~37k-line document
 // that exercises every GFM element GCMD renders. Used for the performance
-// budgets in CLAUDE.md. Output is gitignored; regenerate with:
-//   npm run fixtures:large [-- --mb 1]
+// budgets in CLAUDE.md and docs/perf.md. Output is gitignored; regenerate with:
+//   npm run fixtures:large [-- --mb 1] [-- --out large.md]
+// The 20k-line typing-latency fixture is `--mb 0.55 --out 20k-lines.md`.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,6 +11,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, "..", "tests", "fixtures", "generated");
 const mbArg = process.argv.indexOf("--mb");
 const targetBytes = (mbArg === -1 ? 1 : Number(process.argv[mbArg + 1])) * 1024 * 1024;
+const outArg = process.argv.indexOf("--out");
+const outName = outArg === -1 ? "large.md" : process.argv[outArg + 1];
 
 // Deterministic pseudo-random so the fixture is reproducible.
 let seed = 42;
@@ -62,7 +65,7 @@ while (Buffer.byteLength(body) < targetBytes) {
 }
 
 mkdirSync(outDir, { recursive: true });
-const out = join(outDir, "large.md");
+const out = join(outDir, outName);
 writeFileSync(out, body);
 console.log(
   `wrote ${out}: ${(Buffer.byteLength(body) / 1024 / 1024).toFixed(2)} MB, ${body.split("\n").length} lines, ${i - 1} sections`,

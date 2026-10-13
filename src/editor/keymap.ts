@@ -15,6 +15,7 @@ import { defaultKeymap, historyKeymap } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
 import type { Extension } from "@codemirror/state";
 import { keymap, type KeyBinding } from "@codemirror/view";
+import { isMac } from "../ipc/env";
 import { runCommand } from "./commands/registry";
 
 export interface Shortcut {
@@ -119,8 +120,6 @@ export function baseBindings(): KeyBinding[] {
   return [...defaultKeymap, ...historyKeymap, ...searchKeymap].filter(keep);
 }
 
-const isMac = typeof navigator !== "undefined" && navigator.platform.includes("Mac");
-
 /** Human-readable form of a CodeMirror key name (`Mod-Shift-x` -> `Ctrl+Shift+X`). */
 export function formatKey(key: string): string {
   return key
@@ -128,7 +127,7 @@ export function formatKey(key: string): string {
     .map((part) => {
       switch (part) {
         case "Mod":
-          return isMac ? "Cmd" : "Ctrl";
+          return isMac() ? "Cmd" : "Ctrl";
         case "ArrowUp":
           return "Up";
         case "ArrowDown":

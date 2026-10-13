@@ -224,12 +224,12 @@ Each phase ends with: tests green, lint clean, a manual verification checklist r
 - Keymap v2: Ctrl+L toggles a task, Ctrl+Shift+L the sidebar, Escape chain; `format.clearFormatting` unbound (quickbar and menu only). Edit menu gained Format / Heading / Line submenus, Find Next/Previous, Toggle Task, Align Table, Detect Code Language with accelerators; a unit test keeps `menu.rs` accelerators equal to `keymap.ts`.
 - **Done when:** manual checklist for sidebar, quickbar, and external-change scenarios passes.
 
-### Phase 5 — Quality and performance
+### Phase 5 — Quality and performance — DONE 2026-10-13 (macOS build pending CI)
 
-- GFM spec harness becomes gating for the subset Lezer is expected to pass; documented deviation list with fixes or `known-deviations.md`.
-- Benchmarks: cold start, open 1 MB doc, typing latency at end of 20k-line doc, memory after 10 minutes of editing; recorded in `docs/perf.md` with budgets.
-- First macOS and Linux builds; fix platform-specific menu/shortcut differences (Cmd vs Ctrl).
-- **Done when:** budgets met on Windows and the app runs on at least one other platform.
+- GFM spec harness gates on an explicit `KNOWN_FAILURES` list (652/672 pass, 20 listed and explained in `docs/known-deviations.md`); a renderer-only deviation (escapes in unresolved reference labels) was fixed.
+- Benchmarks in `docs/perf.md`: cold start 300 ms, 1 MB open 330 ms, 9 ms median keystroke at the end of 20k lines, entry chunk 119 kB gzip, no heap growth after 6 000 edits. `npm run bench` (`tests/perf/`) keeps DOM-free baselines; `tools/perf/coldstart.ps1` measures the release build. Known cost: `parseMixed` visits every fence per keystroke (1 MB fixture with 1 118 fences: 22 ms).
+- Linux: Docker image and runner (`tools/linux/`, ADR 0009); `npm run check` passes on Linux. macOS: application menu, predefined Edit items for Cmd+Z/X/C/V/A, Quit through the unsaved prompt, no Alt+letter interception; built by `.github/workflows/build.yml` once the repository has a remote (no Mac on hand).
+- **Done when:** budgets met on Windows and the app runs on at least one other platform. The Linux `.deb` and AppImage build from `npm run linux:build`; running them on a Linux desktop is in the phase 5 checklist.
 
 ### Phase 6 — Later features (designed for, not built now)
 
