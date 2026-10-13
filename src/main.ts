@@ -3,6 +3,7 @@
  * wiring -> open the launch file. No editing logic lives here.
  */
 import type { ViewUpdate } from "@codemirror/view";
+import { createOutlineController } from "./app/outline";
 import { createSession } from "./app/session";
 import { createBanner } from "./chrome/banner";
 import { installMenuMnemonics } from "./chrome/menuKeys";
@@ -11,7 +12,7 @@ import { createThemeController } from "./chrome/theme";
 import { runCommand } from "./editor/commands";
 import { createEditor } from "./editor/create";
 import { launchArgs } from "./ipc/app";
-import { onMenu, onOpenFile } from "./ipc/events";
+import { onFileChanged, onMenu, onOpenFile } from "./ipc/events";
 import { getSettings, type Settings } from "./ipc/settings";
 import { isTauri } from "./ipc/env";
 import { onCloseRequested, onFilesDropped } from "./ipc/window";
@@ -64,14 +65,24 @@ async function bootstrap(): Promise<void> {
     dark: theme.resolved === "dark",
     onUpdate: (update) => hooks.onUpdate?.(update),
   });
-  const current = createSession({ view, banner, sidebar, theme });
+  const outline = createOutlineController(view, sidebar);
+  const current = createSession({
+    view,
+    banner,
+    sidebar,
+    theme,
+    onLoad: () => {
+      outline.refresh();
+    },
+  });
   hooks.onUpdate = (update) => {
     current.onEditorUpdate(update);
+    outline.onEditorUpdate(update);
   };
 
   if (import.meta.env.DEV) {
     // Debug handle for the browser console and automated UI checks.
-    Object.assign(window, { gcmd: { view, session: current } });
+    Object.assign(window, { gcmd: { view, session: current, outline, sidebar, banner } });
   }
   if (!isTauri()) {
     // Plain browser (`npm run dev`): no menu, no files; the editor still works.
@@ -89,6 +100,9 @@ async function bootstrap(): Promise<void> {
   });
   await onOpenFile((path) => {
     void current.open(path);
+  });
+  await onFileChanged((change) => {
+    current.onFileChanged(change);
   });
   await onFilesDropped((paths) => {
     const first = paths[0];

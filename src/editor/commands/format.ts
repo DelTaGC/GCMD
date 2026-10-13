@@ -113,6 +113,75 @@ export const toggleEmphasis = toggleWrap(EMPHASIS);
 export const toggleInlineCode = toggleWrap(INLINE_CODE);
 export const toggleStrikethrough = toggleWrap(STRIKETHROUGH);
 
+/** Inline nodes whose marks `clearFormatting` removes, with their mark names. */
+const CLEARABLE: Readonly<Record<string, readonly string[]>> = {
+  StrongEmphasis: ["EmphasisMark"],
+  Emphasis: ["EmphasisMark"],
+  InlineCode: ["CodeMark"],
+  Strikethrough: ["StrikethroughMark"],
+};
+
+/**
+ * Removes inline formatting (strong, emphasis, inline code, strikethrough,
+ * links) from every node touching the selection; the text is kept, a link
+ * keeps its text and loses its destination. An empty selection clears the
+ * whole line.
+ */
+export const clearFormatting: StateCommand = ({ state, dispatch }) => {
+  const seen = new Set<string>();
+  const changes: { from: number; to: number; insert: string }[] = [];
+  const remove = (from: number, to: number): void => {
+    const key = `${String(from)}-${String(to)}`;
+    if (to > from && !seen.has(key)) {
+      seen.add(key);
+      changes.push({ from, to, insert: "" });
+    }
+  };
+  for (const range of state.selection.ranges) {
+    let { from, to } = range;
+    if (from === to) {
+      const line = state.doc.lineAt(from);
+      from = line.from;
+      to = line.to;
+    }
+    treeFor(state, to).iterate({
+      from,
+      to,
+      enter: (node) => {
+        const marks = CLEARABLE[node.name];
+        if (marks) {
+          for (const child of node.node.getChildren(marks[0] ?? "")) {
+            remove(child.from, child.to);
+          }
+          return true;
+        }
+        if (node.name === "Link") {
+          const [open, close] = node.node.getChildren("LinkMark");
+          if (open && close) {
+            remove(open.from, open.to);
+            remove(close.from, node.to);
+          }
+          return true;
+        }
+        return undefined;
+      },
+    });
+  }
+  if (changes.length === 0) {
+    return false;
+  }
+  const set = state.changes(changes);
+  dispatch(
+    state.update({
+      changes: set,
+      selection: state.selection.map(set),
+      scrollIntoView: true,
+      userEvent: "delete.format",
+    }),
+  );
+  return true;
+};
+
 const URL_LIKE = /^(https?:\/\/|www\.|mailto:)\S+$/i;
 
 /**

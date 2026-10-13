@@ -17,14 +17,27 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   through a registry `{ id, title, run }`. Add the command, then bind it in
   `keymap.ts`, then expose it in menu/quickbar. Never inline a transaction in
   chrome code.
-- `app/session.ts` owns the open document (path, save metadata, dirty flag)
-  and the open/save/new/close flows; it registers the `file.*`, `view.*`
-  and `help.*` commands. Menu events arrive as command ids (`ipc/events.ts`)
-  and `main.ts` just runs them.
+- `app/session.ts` owns the open document (path, save metadata, dirty flag,
+  last known mtime) and the open/save/new/close flows; it registers the
+  `file.*`, `view.*` and `help.*` commands and handles `file-changed`
+  events (silent reload through `app/reload.ts` when clean, banner when
+  dirty). Menu events arrive as command ids (`ipc/events.ts`) and `main.ts`
+  just runs them. `view.setState` fires no update, so the session calls
+  `onLoad` after loading a document for things that mirror the state.
+- `app/outline.ts` links the editor to the sidebar: headings come from
+  `editor/outline.ts` (pure, tree-based), recomputed debounced after the
+  document or tree changed; selection changes only move the highlight.
+  Clicking a heading goes through `commands/cursor.ts` `jumpTo`.
+- `editor/quickbar.ts` is the selection toolbar: a `showTooltip` state field
+  (visible when the main selection is non-empty, no drag in progress, not
+  dismissed) whose buttons run registry commands. `edit.escape` dismisses
+  it before closing search or collapsing the selection.
 - `ipc/`: the only module allowed to import `@tauri-apps/api` or plugins.
   Each Rust command gets a typed wrapper function with the same name.
 - `chrome/`: plain DOM builders returning an element plus an `update()`;
   no global state, no querySelector outside the module that created the node.
+  Chrome never dispatches to the editor: the sidebar emits `onJump`, the
+  banner runs the `BannerAction`s it was given.
 - `detect/`: pure functions, no DOM.
 - Themes: CSS custom properties on `:root` and `:root[data-theme="dark"]`.
   Editor theme in `editor/theme/` references those variables only.

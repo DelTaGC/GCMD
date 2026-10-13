@@ -29,3 +29,16 @@ export function readDocument(path: string): Promise<DocumentFile> {
 export function writeDocument(path: string, text: string, meta: DocumentMeta): Promise<number> {
   return invoke<number>("write_document", { path, text, meta });
 }
+
+/**
+ * Starts watching `path` for changes made by other programs; `file-changed`
+ * events (`ipc/events.ts`) follow. Replaces any previous watch.
+ */
+export function watchDocument(path: string): Promise<void> {
+  return invoke("watch_document", { path });
+}
+
+/** Stops watching the current document. */
+export function unwatchDocument(): Promise<void> {
+  return invoke("unwatch_document");
+}

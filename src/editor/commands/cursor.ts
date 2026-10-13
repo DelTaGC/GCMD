@@ -9,7 +9,7 @@
  */
 import { cursorLineDown, cursorLineUp } from "@codemirror/commands";
 import { EditorSelection } from "@codemirror/state";
-import type { Command, EditorView } from "@codemirror/view";
+import { EditorView, type Command } from "@codemirror/view";
 import { blockRanges } from "../livePreview/decorate";
 
 function moveInto(view: EditorView, forward: boolean): boolean {
@@ -36,3 +36,17 @@ function moveInto(view: EditorView, forward: boolean): boolean {
 
 export const lineDownIntoBlocks: Command = (view) => moveInto(view, true);
 export const lineUpIntoBlocks: Command = (view) => moveInto(view, false);
+
+/**
+ * Puts the cursor at `pos` and scrolls that line to the top of the view
+ * (outline clicks). The only way chrome code moves the cursor.
+ */
+export function jumpTo(view: EditorView, pos: number): void {
+  const clamped = Math.max(0, Math.min(pos, view.state.doc.length));
+  view.dispatch({
+    selection: EditorSelection.cursor(clamped),
+    effects: EditorView.scrollIntoView(clamped, { y: "start", yMargin: 24 }),
+    userEvent: "select",
+  });
+  view.focus();
+}

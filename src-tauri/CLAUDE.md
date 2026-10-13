@@ -9,7 +9,7 @@ is not OS integration belongs in the TypeScript frontend.
 | ------------- | ----------------------------------------------------------------------------------------------------------- |
 | `lib.rs`      | Builder setup, plugin registration, `generate_handler!` list                                                |
 | `document.rs` | Read/write a file as bytes; detect and preserve encoding, BOM, line endings, trailing newline; report mtime |
-| `watcher.rs`  | `notify`-based watcher, emits `file-changed` events; ignores our own writes by mtime                        |
+| `watcher.rs`  | `notify` watcher on the document's directory, debounced, emits `file-changed` with the current mtime        |
 | `menu.rs`     | Native menu, recent-files submenu, menu events forwarded to the window                                      |
 | `settings.rs` | Versioned JSON settings in the app-config dir; migrations                                                   |
 | `cli.rs`      | Launch arguments and macOS `RunEvent::Opened`; resolves to an absolute path                                 |
@@ -24,7 +24,9 @@ is not OS integration belongs in the TypeScript frontend.
   frontend as `{ kind, message }`. Never `unwrap`/`expect` outside `main`,
   `run()`, and tests. Clippy pedantic is on; `unsafe` is forbidden.
 - Never block the main thread: file I/O and watching run in `async` commands
-  or `tauri::async_runtime::spawn`.
+  or `tauri::async_runtime::spawn`. The watcher delivers events from its own
+  thread and `emit`s them; one watcher per process lives in `AppState`, and
+  the frontend (not Rust) decides whether a change is our own save.
 - Paths: accept `String` from the frontend, convert to `PathBuf` immediately,
   canonicalize for the recent list, and never log full contents of a file.
 - Every new command needs: the `#[tauri::command]`, an entry in

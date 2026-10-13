@@ -2,6 +2,7 @@ import { type EditorState, type StateCommand, type Transaction } from "@codemirr
 import { describe, expect, it } from "vitest";
 import { stateWith } from "../testing";
 import {
+  clearFormatting,
   insertLink,
   toggleEmphasis,
   toggleInlineCode,
@@ -114,5 +115,39 @@ describe("setHeadingLevel", () => {
 
   it("returns false when nothing changes", () => {
     expect(apply(setHeadingLevel(0), stateWith("plain", 0)).ran).toBe(false);
+  });
+});
+
+describe("clearFormatting", () => {
+  it("strips strong, emphasis, code and strikethrough marks inside the selection", () => {
+    const doc = "a **b** *c* `d` ~~e~~ f";
+    const r = apply(clearFormatting, stateWith(doc, { anchor: 0, head: doc.length }));
+    expect(r.doc).toBe("a b c d e f");
+    expect([r.from, r.to]).toEqual([0, r.doc.length]);
+  });
+
+  it("keeps link text and drops the destination", () => {
+    const r = apply(
+      clearFormatting,
+      stateWith('see [the spec](https://example.com "t") now', { anchor: 4, head: 14 }),
+    );
+    expect(r.doc).toBe("see the spec now");
+  });
+
+  it("handles nested marks and clears the whole line for an empty selection", () => {
+    const r = apply(clearFormatting, stateWith("***both*** and plain", 2));
+    expect(r.doc).toBe("both and plain");
+    expect(r.ran).toBe(true);
+  });
+
+  it("does nothing on plain text", () => {
+    const r = apply(clearFormatting, stateWith("plain text", { anchor: 0, head: 5 }));
+    expect(r.ran).toBe(false);
+    expect(r.doc).toBe("plain text");
+  });
+
+  it("only touches nodes overlapping the selection", () => {
+    const r = apply(clearFormatting, stateWith("**a** and **b**", { anchor: 0, head: 5 }));
+    expect(r.doc).toBe("a and **b**");
   });
 });

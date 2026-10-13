@@ -15,13 +15,16 @@ import {
   selectAll,
   selectLineDown,
   selectLineUp,
+  simplifySelection,
   undo,
 } from "@codemirror/commands";
 import { deleteMarkupBackward, insertNewlineContinueMarkup } from "@codemirror/lang-markdown";
 import { closeSearchPanel, findNext, findPrevious, openSearchPanel } from "@codemirror/search";
+import { dismissQuickbar, quickbarVisible } from "../quickbar";
 import { detectFenceLanguage } from "./code";
 import { lineDownIntoBlocks, lineUpIntoBlocks } from "./cursor";
 import {
+  clearFormatting,
   insertLink,
   toggleEmphasis,
   toggleInlineCode,
@@ -29,8 +32,18 @@ import {
   toggleStrong,
 } from "./format";
 import { setHeadingLevel } from "./headings";
+import { toggleTask } from "./lists";
 import { defineCommand, type CommandDef, type CommandRunner } from "./registry";
 import { alignTable, nextCell, prevCell } from "./table";
+
+/** Hides the quickbar; false when it is not showing so Escape falls through. */
+const hideQuickbar: CommandRunner = (view) => {
+  if (!quickbarVisible(view.state)) {
+    return false;
+  }
+  view.dispatch({ effects: dismissQuickbar.of(null) });
+  return true;
+};
 
 export { defineCommand, getCommand, listCommands, runCommand } from "./registry";
 export type { CommandDef, CommandRunner } from "./registry";
@@ -46,6 +59,12 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "format.inlineCode", title: "Inline code", run: toggleInlineCode }),
   defineCommand({ id: "format.strikethrough", title: "Strikethrough", run: toggleStrikethrough }),
   defineCommand({ id: "format.link", title: "Insert link", run: insertLink }),
+  defineCommand({
+    id: "format.clearFormatting",
+    title: "Clear formatting",
+    run: clearFormatting,
+  }),
+  defineCommand({ id: "list.toggleTask", title: "Toggle task", run: toggleTask }),
   defineCommand({ id: "format.paragraph", title: "Paragraph", run: setHeadingLevel(0) }),
   defineCommand({ id: "format.heading1", title: "Heading 1", run: setHeadingLevel(1) }),
   defineCommand({ id: "format.heading2", title: "Heading 2", run: setHeadingLevel(2) }),
@@ -100,6 +119,11 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "edit.undo", title: "Undo", run: undo }),
   defineCommand({ id: "edit.redo", title: "Redo", run: redo }),
   defineCommand({ id: "edit.selectAll", title: "Select all", run: selectAll }),
+  defineCommand({
+    id: "edit.escape",
+    title: "Escape (hide quickbar, close search, collapse selection)",
+    run: chain(hideQuickbar, closeSearchPanel, simplifySelection),
+  }),
   defineCommand({ id: "search.find", title: "Find", run: openSearchPanel }),
   defineCommand({ id: "search.replace", title: "Replace", run: openSearchPanel }),
   defineCommand({ id: "search.next", title: "Find next", run: findNext }),

@@ -10,6 +10,7 @@ pub mod error;
 pub mod menu;
 pub mod paths;
 pub mod settings;
+pub mod watcher;
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -20,6 +21,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 use crate::document::{Document, DocumentMeta};
 use crate::error::AppError;
 use crate::settings::{Settings, Theme};
+use crate::watcher::DocumentWatcher;
 
 /// Static information about the running application, shown in the About
 /// dialog.
@@ -41,13 +43,16 @@ impl AppInfo {
     }
 }
 
-/// Process-wide state managed by Tauri. Only settings and the file to open
-/// at launch live here (CLAUDE.md invariant 6).
+/// Process-wide state managed by Tauri. Only settings, the file to open at
+/// launch and the watch on the open document live here (CLAUDE.md
+/// invariant 6).
 pub struct AppState {
     settings: Mutex<Settings>,
     settings_path: PathBuf,
     /// File requested by argv or a macOS open event, consumed by `launch_args`.
     pending_open: Mutex<Option<PathBuf>>,
+    /// Watch on the document currently open in the window, if any.
+    watcher: Mutex<Option<DocumentWatcher>>,
 }
 
 impl AppState {
@@ -56,7 +61,20 @@ impl AppState {
             settings: Mutex::new(settings),
             settings_path,
             pending_open: Mutex::new(pending_open),
+            watcher: Mutex::new(None),
         }
+    }
+
+    /// Replaces the current document watch (`None` stops watching).
+    fn set_watcher(&self, next: Option<DocumentWatcher>) -> Result<(), AppError> {
+        let mut guard = self
+            .watcher
+            .lock()
+            .map_err(|_| AppError::Internal("watcher lock poisoned".into()))?;
+        // The previous watcher is dropped after the lock is taken so a stale
+        // event can never be emitted after the new watch started.
+        *guard = next;
+        Ok(())
     }
 
     fn snapshot(&self) -> Result<Settings, AppError> {
@@ -119,6 +137,29 @@ async fn write_document(path: String, text: String, meta: DocumentMeta) -> Resul
     tauri::async_runtime::spawn_blocking(move || document::write(&path, &text, &meta))
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?
+}
+
+/// Watches `path` for changes by other programs; the frontend receives
+/// `file-changed` events (see `watcher.rs`). Replaces any previous watch.
+#[tauri::command]
+fn watch_document<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<(), AppError> {
+    let path = PathBuf::from(path);
+    let watcher = watcher::watch(&path, move |change| {
+        if let Err(e) = app.emit("file-changed", change) {
+            eprintln!("file-changed emit failed: {e}");
+        }
+    })?;
+    state.set_watcher(Some(watcher))
+}
+
+/// Stops watching the current document (untitled document, window closing).
+#[tauri::command]
+fn unwatch_document(state: State<'_, AppState>) -> Result<(), AppError> {
+    state.set_watcher(None)
 }
 
 #[tauri::command]
@@ -286,6 +327,8 @@ pub fn run() {
             launch_args,
             read_document,
             write_document,
+            watch_document,
+            unwatch_document,
             get_settings,
             set_theme,
             set_sidebar_visible,

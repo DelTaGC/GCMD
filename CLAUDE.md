@@ -74,13 +74,13 @@ commit.
 ```
 src/                  frontend (TypeScript)
   main.ts             bootstrap: args -> open file -> build editor -> wire chrome
-  app/                document session: path, dirty state, open/save/close flows, file.* commands
-  editor/             CodeMirror assembly, live-preview decorations, commands, keymap, themes
-  chrome/             sidebar, quickbar, banners, title (plain DOM)
+  app/                document session (path, dirty state, open/save/close, external-change reload), outline controller
+  editor/             CodeMirror assembly, live-preview decorations, commands, keymap, quickbar, outline model, themes
+  chrome/             sidebar outline, banners, title (plain DOM)
   ipc/                typed wrappers around Tauri invoke/events; the only place `invoke` is called
   detect/             code-fence language heuristic
   spec/               GFM spec harness
-src-tauri/            backend (Rust): document I/O, menu, settings, cli (watcher in phase 4)
+src-tauri/            backend (Rust): document I/O, file watcher, menu, settings, cli
   capabilities/       least-privilege permissions per window
 tests/fixtures/       gfm/spec.{txt,json}, sample.md, generated/ (gitignored)
 tools/                node scripts (spec extraction, fixture generation)

@@ -425,3 +425,58 @@
 .cm-editor.cm-ctrl-held .cm-url {
   cursor: pointer;
 }
+
+/* Quickbar: formatting toolbar shown above a selection. The bar's own
+   element is the CodeMirror tooltip (`.cm-tooltip` is added to it). */
+.cm-editor .cm-tooltip.cm-quickbar {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-bg);
+  color: var(--fg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+}
+.cm-quickbar-heading,
+.cm-quickbar-button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 7px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.cm-quickbar-heading {
+  max-width: 7.5rem;
+}
+.cm-quickbar-heading:hover,
+.cm-quickbar-button:hover {
+  background: var(--selection-match);
+  border-color: var(--border);
+}
+.cm-quickbar-heading:focus-visible,
+.cm-quickbar-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.cm-quickbar-strong {
+  font-weight: 700;
+}
+.cm-quickbar-emphasis {
+  font-style: italic;
+}
+.cm-quickbar-code {
+  font-family: var(--font-mono);
+}
+.cm-quickbar-strike {
+  text-decoration: line-through;
+}
+.cm-quickbar-clear {
+  color: var(--fg-muted);
+}

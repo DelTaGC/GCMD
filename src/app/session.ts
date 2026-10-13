@@ -6,6 +6,11 @@
  *
  * Dirty is computed by comparing the buffer with the last saved text, so
  * undoing back to the saved state clears the marker.
+ *
+ * The open file is watched (`ipc/document.ts`, `watcher.rs`): a change on
+ * disk is reloaded silently while the buffer is clean and announced in the
+ * banner (Reload / Keep) while it is dirty. Our own saves are told apart by
+ * the modification time the write returned.
  */
 import type { Text } from "@codemirror/state";
 import type { EditorView, ViewUpdate } from "@codemirror/view";
@@ -19,16 +24,27 @@ import { setDocumentPath } from "../editor/document";
 import { setEditorDark } from "../editor/theme";
 import { appInfo, openNewWindow } from "../ipc/app";
 import { askUnsavedChanges, pickOpenFile, pickSaveFile, showError, showInfo } from "../ipc/dialog";
-import { DEFAULT_META, readDocument, writeDocument, type DocumentMeta } from "../ipc/document";
+import {
+  DEFAULT_META,
+  readDocument,
+  unwatchDocument,
+  watchDocument,
+  writeDocument,
+  type DocumentMeta,
+} from "../ipc/document";
 import { describeError } from "../ipc/errors";
+import type { FileChange } from "../ipc/events";
 import { addRecentFile, removeRecentFile, setSidebarVisible, setTheme } from "../ipc/settings";
 import { requestClose } from "../ipc/window";
+import { minimalChange } from "./reload";
 
 export interface SessionDeps {
   view: EditorView;
   banner: Banner;
   sidebar: Sidebar;
   theme: ThemeController;
+  /** Called after a document was loaded into the editor (`setState` fires no update). */
+  onLoad?: () => void;
 }
 
 export interface Session {
@@ -43,6 +59,8 @@ export interface Session {
   confirmClose(): Promise<boolean>;
   /** Hook for `EditorView.updateListener`. */
   onEditorUpdate(update: ViewUpdate): void;
+  /** Hook for the `file-changed` event (`ipc/events.ts`). */
+  onFileChanged(change: FileChange): void;
 }
 
 export function createSession(deps: SessionDeps): Session {
@@ -51,6 +69,8 @@ export function createSession(deps: SessionDeps): Session {
   let meta: DocumentMeta = { ...DEFAULT_META };
   let savedDoc: Text = view.state.doc;
   let dirty = false;
+  /** Modification time of the file as we last read or wrote it. */
+  let knownMtime: number | null = null;
 
   const refreshTitle = (): void => {
     updateTitle(path, dirty);
@@ -62,18 +82,56 @@ export function createSession(deps: SessionDeps): Session {
     refreshTitle();
   };
 
-  const load = (newPath: string | null, text: string, newMeta: DocumentMeta): void => {
+  const watch = (target: string | null): void => {
+    const request = target === null ? unwatchDocument() : watchDocument(target);
+    request.catch((err: unknown) => {
+      console.warn("watchDocument failed", err);
+    });
+  };
+
+  const load = (
+    newPath: string | null,
+    text: string,
+    newMeta: DocumentMeta,
+    mtime: number | null,
+  ): void => {
     replaceDocument(view, text, theme.resolved === "dark", newPath);
     path = newPath;
     meta = newMeta;
+    knownMtime = mtime;
     banner.hide();
     markSaved();
+    deps.onLoad?.();
+    watch(newPath);
     view.focus();
+  };
+
+  /** Re-reads the open file and applies the difference as one edit. */
+  const reloadFromDisk = async (): Promise<void> => {
+    if (path === null) {
+      return;
+    }
+    const target = path;
+    try {
+      const doc = await readDocument(target);
+      if (target !== path) {
+        return;
+      }
+      meta = doc.meta;
+      knownMtime = doc.mtimeMs;
+      const change = minimalChange(view.state.doc.toString(), doc.text);
+      if (change) {
+        view.dispatch({ changes: change, userEvent: "reload" });
+      }
+      markSaved();
+    } catch (err: unknown) {
+      banner.show("error", `Could not reload "${fileName(target)}": ${describeError(err)}`);
+    }
   };
 
   const writeTo = async (target: string): Promise<boolean> => {
     try {
-      await writeDocument(target, view.state.doc.toString(), meta);
+      knownMtime = await writeDocument(target, view.state.doc.toString(), meta);
     } catch (err: unknown) {
       await showError("Save failed", `Could not save "${target}":\n${describeError(err)}`);
       return false;
@@ -81,7 +139,9 @@ export function createSession(deps: SessionDeps): Session {
     if (target !== path) {
       path = target;
       setDocumentPath(view, target);
+      watch(target);
     }
+    banner.hide();
     markSaved();
     await addRecentFile(target).catch((err: unknown) => {
       console.warn("addRecentFile failed", err);
@@ -120,7 +180,7 @@ export function createSession(deps: SessionDeps): Session {
     }
     try {
       const doc = await readDocument(target);
-      load(doc.path, doc.text, doc.meta);
+      load(doc.path, doc.text, doc.meta, doc.mtimeMs);
       await addRecentFile(doc.path).catch((err: unknown) => {
         console.warn("addRecentFile failed", err);
       });
@@ -136,8 +196,30 @@ export function createSession(deps: SessionDeps): Session {
     if (!(await confirmDiscard())) {
       return false;
     }
-    load(null, "", { ...DEFAULT_META });
+    load(null, "", { ...DEFAULT_META }, null);
     return true;
+  };
+
+  const onFileChanged = (change: FileChange): void => {
+    if (path === null || change.path !== path) {
+      return;
+    }
+    if (change.mtimeMs !== null && change.mtimeMs === knownMtime) {
+      return; // our own save
+    }
+    const name = fileName(path);
+    if (change.mtimeMs === null) {
+      banner.show("warning", `"${name}" was deleted or moved on disk. Save to write it again.`);
+      return;
+    }
+    if (!dirty) {
+      void reloadFromDisk();
+      return;
+    }
+    banner.show("warning", `"${name}" changed on disk. Reload and lose your edits, or keep them?`, [
+      { label: "Reload", run: () => void reloadFromDisk() },
+      { label: "Keep", run: () => undefined },
+    ]);
   };
 
   const fire = (work: () => Promise<unknown>): boolean => {
@@ -216,6 +298,7 @@ export function createSession(deps: SessionDeps): Session {
     save,
     saveAs,
     confirmClose: confirmDiscard,
+    onFileChanged,
     onEditorUpdate(update): void {
       if (!update.docChanged) {
         return;

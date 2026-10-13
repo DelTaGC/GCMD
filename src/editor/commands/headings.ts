@@ -3,11 +3,17 @@
  * heading of the given level, or back to a paragraph with level 0. Existing
  * `#` prefixes are replaced, never stacked.
  */
-import type { StateCommand } from "@codemirror/state";
+import type { EditorState, StateCommand } from "@codemirror/state";
 
 const ATX_PREFIX = /^( {0,3})(#{1,6})([ \t]+|$)/;
 
 export type HeadingLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/** The ATX heading level of the line containing `pos`; 0 for anything else. */
+export function headingLevelAt(state: EditorState, pos: number): HeadingLevel {
+  const match = ATX_PREFIX.exec(state.doc.lineAt(pos).text);
+  return match ? ((match[2]?.length ?? 0) as HeadingLevel) : 0;
+}
 
 export function setHeadingLevel(level: HeadingLevel): StateCommand {
   return ({ state, dispatch }) => {

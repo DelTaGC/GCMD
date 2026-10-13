@@ -20,6 +20,7 @@ import { documentPathExtension } from "./document";
 import { buildKeymap } from "./keymap";
 import { linkOpener } from "./links";
 import { livePreview } from "./livePreview";
+import { quickbar } from "./quickbar";
 import { editorTheme } from "./theme";
 
 export interface EditorOptions {
@@ -61,6 +62,7 @@ export function createEditorState(
       markdownExtension(),
       livePreview,
       linkOpener,
+      quickbar,
       search({ top: true }),
       buildKeymap(),
       editorTheme(dark),

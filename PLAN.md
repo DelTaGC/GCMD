@@ -216,12 +216,12 @@ Each phase ends with: tests green, lint clean, a manual verification checklist r
 - Arrow keys step into rendered blocks instead of skipping them (`cursor.*` commands).
 - **Done when:** the sample document renders every block correctly in both themes with no cursor jumps when entering/leaving blocks.
 
-### Phase 4 — Navigation and editing UX
+### Phase 4 — Navigation and editing UX — DONE 2026-10-13
 
-- Sidebar outline: heading tree, collapsible nodes, click-to-jump, active section tracking, toggle in View menu.
-- Quickbar: appears on non-empty selection with bold, italic, inline code, strikethrough, link, heading level, clear formatting; keyboard-dismissable.
-- File watcher: silent reload when clean, banner when dirty.
-- Keymap v2 complete; shortcuts shown in menus.
+- Sidebar outline: heading tree from the syntax tree (`editor/outline.ts`), collapsible nodes, click-to-jump, active section tracking, debounced after edits; View > Sidebar (Ctrl+Shift+L).
+- Quickbar: a CodeMirror tooltip above a non-empty selection (shown once the mouse button is released) with bold, italic, inline code, strikethrough, link, heading level, clear formatting; Escape dismisses it, then closes search, then collapses the selection.
+- File watcher: `notify` on the parent directory (ADR 0008); silent reload as one minimal edit when clean, Reload / Keep banner when dirty, "deleted" notice; own saves recognized by mtime.
+- Keymap v2: Ctrl+L toggles a task, Ctrl+Shift+L the sidebar, Escape chain; `format.clearFormatting` unbound (quickbar and menu only). Edit menu gained Format / Heading / Line submenus, Find Next/Previous, Toggle Task, Align Table, Detect Code Language with accelerators; a unit test keeps `menu.rs` accelerators equal to `keymap.ts`.
 - **Done when:** manual checklist for sidebar, quickbar, and external-change scenarios passes.
 
 ### Phase 5 — Quality and performance

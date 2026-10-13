@@ -92,9 +92,71 @@ fn file_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
     )
 }
 
+fn format_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
+    Submenu::with_items(
+        app,
+        "F&ormat",
+        true,
+        &[
+            &item(app, "format.strong", "&Bold", Some("CmdOrCtrl+B"))?,
+            &item(app, "format.emphasis", "&Italic", Some("CmdOrCtrl+I"))?,
+            &item(
+                app,
+                "format.inlineCode",
+                "Inline &Code",
+                Some("CmdOrCtrl+E"),
+            )?,
+            &item(
+                app,
+                "format.strikethrough",
+                "&Strikethrough",
+                Some("CmdOrCtrl+Shift+X"),
+            )?,
+            &item(app, "format.link", "&Link", Some("CmdOrCtrl+K"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &item(app, "format.clearFormatting", "Clear &Formatting", None)?,
+        ],
+    )
+}
+
+fn heading_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
+    Submenu::with_items(
+        app,
+        "&Heading",
+        true,
+        &[
+            &item(app, "format.paragraph", "&Paragraph", Some("CmdOrCtrl+0"))?,
+            &item(app, "format.heading1", "Heading &1", Some("CmdOrCtrl+1"))?,
+            &item(app, "format.heading2", "Heading &2", Some("CmdOrCtrl+2"))?,
+            &item(app, "format.heading3", "Heading &3", Some("CmdOrCtrl+3"))?,
+            &item(app, "format.heading4", "Heading &4", Some("CmdOrCtrl+4"))?,
+            &item(app, "format.heading5", "Heading &5", Some("CmdOrCtrl+5"))?,
+            &item(app, "format.heading6", "Heading &6", Some("CmdOrCtrl+6"))?,
+        ],
+    )
+}
+
+fn line_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
+    Submenu::with_items(
+        app,
+        "&Line",
+        true,
+        &[
+            &item(app, "line.duplicate", "&Duplicate", Some("CmdOrCtrl+D"))?,
+            &item(app, "line.moveUp", "Move &Up", Some("Alt+Up"))?,
+            &item(app, "line.moveDown", "Move Dow&n", Some("Alt+Down"))?,
+            &item(app, "line.copyUp", "Copy U&p", Some("Shift+Alt+Up"))?,
+            &item(app, "line.copyDown", "Copy D&own", Some("Shift+Alt+Down"))?,
+            &item(app, "line.delete", "De&lete", Some("CmdOrCtrl+Shift+K"))?,
+        ],
+    )
+}
+
 fn edit_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
     // Undo/Redo carry no accelerator on purpose: the key must reach the
     // webview so that an input field (search panel) can handle its own undo.
+    // Every other accelerator here mirrors `src/editor/keymap.ts`; a unit
+    // test on the frontend side keeps the two in sync.
     Submenu::with_id_and_items(
         app,
         "menu.edit",
@@ -110,6 +172,21 @@ fn edit_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
                 "search.replace",
                 "Find and Re&place...",
                 Some("CmdOrCtrl+H"),
+            )?,
+            &item(app, "search.next", "Find &Next", Some("F3"))?,
+            &item(app, "search.previous", "Find Pre&vious", Some("Shift+F3"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &format_submenu(app)?,
+            &heading_submenu(app)?,
+            &line_submenu(app)?,
+            &PredefinedMenuItem::separator(app)?,
+            &item(app, "list.toggleTask", "Toggle &Task", Some("CmdOrCtrl+L"))?,
+            &item(app, "table.align", "&Align Table", Some("Shift+Alt+F"))?,
+            &item(
+                app,
+                "code.detectLanguage",
+                "Detect &Code Language",
+                Some("Shift+Alt+L"),
             )?,
         ],
     )
@@ -138,7 +215,7 @@ fn view_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
         "&Sidebar",
         true,
         settings.sidebar_visible,
-        None::<&str>,
+        Some("CmdOrCtrl+Shift+L"),
     )?;
     Submenu::with_id_and_items(
         app,

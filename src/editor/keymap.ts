@@ -59,7 +59,8 @@ export const shortcuts: readonly Shortcut[] = [
   { key: "ArrowUp", command: "cursor.lineUp" },
   { key: "Shift-ArrowDown", command: "cursor.selectLineDown" },
   { key: "Shift-ArrowUp", command: "cursor.selectLineUp" },
-  // Tables and code
+  // Lists, tables and code
+  { key: "Mod-l", command: "list.toggleTask" },
   { key: "Shift-Alt-f", command: "table.align" },
   { key: "Shift-Alt-l", command: "code.detectLanguage" },
   // Editing
@@ -67,6 +68,11 @@ export const shortcuts: readonly Shortcut[] = [
   { key: "Mod-y", command: "edit.redo" },
   { key: "Mod-Shift-z", command: "edit.redo" },
   { key: "Mod-a", command: "edit.selectAll" },
+  // Escape dismisses the quickbar, then closes search, then collapses the
+  // selection (the search panel's own Escape binding is scoped and kept).
+  { key: "Escape", command: "edit.escape" },
+  // View (registered by app/session.ts)
+  { key: "Mod-Shift-l", command: "view.toggleSidebar" },
   // Search
   { key: "Mod-f", command: "search.find" },
   { key: "Mod-h", command: "search.replace" },
@@ -87,6 +93,15 @@ function normalize(key: string): string {
   return key.toLowerCase();
 }
 
+/**
+ * A base binding that also runs in a scope other than the editor (the
+ * search panel's inputs) is kept even when our table binds the same key:
+ * ours runs first in the editor, theirs keeps working in the panel.
+ */
+function hasOtherScope(binding: KeyBinding): boolean {
+  return (binding.scope ?? "editor").split(" ").some((scope) => scope !== "editor");
+}
+
 /** CodeMirror's default, history and search bindings minus what we override. */
 export function baseBindings(): KeyBinding[] {
   const ours = new Set(shortcuts.map((s) => normalize(s.key)));
@@ -96,12 +111,46 @@ export function baseBindings(): KeyBinding[] {
     );
     return names.every(
       (k) =>
-        !ours.has(normalize(k)) &&
+        (!ours.has(normalize(k)) || hasOtherScope(binding)) &&
         !DROPPED_BASE_KEYS.has(k) &&
         !FORBIDDEN_KEYS.some((f) => k.includes(f)),
     );
   };
   return [...defaultKeymap, ...historyKeymap, ...searchKeymap].filter(keep);
+}
+
+const isMac = typeof navigator !== "undefined" && navigator.platform.includes("Mac");
+
+/** Human-readable form of a CodeMirror key name (`Mod-Shift-x` -> `Ctrl+Shift+X`). */
+export function formatKey(key: string): string {
+  return key
+    .split("-")
+    .map((part) => {
+      switch (part) {
+        case "Mod":
+          return isMac ? "Cmd" : "Ctrl";
+        case "ArrowUp":
+          return "Up";
+        case "ArrowDown":
+          return "Down";
+        case "ArrowLeft":
+          return "Left";
+        case "ArrowRight":
+          return "Right";
+        default:
+          return part.length === 1 ? part.toUpperCase() : part;
+      }
+    })
+    .join("+");
+}
+
+/** The label of the first shortcut bound to `command`, or `null`. */
+export function shortcutLabel(command: string): string | null {
+  const shortcut = shortcuts.find((s) => s.command === command);
+  if (!shortcut) {
+    return null;
+  }
+  return shortcut.label ?? formatKey(shortcut.key);
 }
 
 /** The keymap extension: our table first, then the filtered base. */
