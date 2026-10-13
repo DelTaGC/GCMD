@@ -22,6 +22,11 @@ export async function openNewWindow(path?: string): Promise<void> {
   await invoke("open_new_window", { path: path ?? null });
 }
 
+/** Pops up a top-level native menu (`menu.file`, `menu.edit`, ...). */
+export function openMenu(id: string): Promise<boolean> {
+  return invoke<boolean>("open_menu", { id });
+}
+
 /** Normalized form of a path for titles and the recent list. */
 export function displayPath(path: string): Promise<string> {
   return invoke<string>("display_path", { path });

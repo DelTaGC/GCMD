@@ -47,9 +47,13 @@
   background: var(--selection-match);
 }
 
-/* Markup characters shown on the active line. */
+/* Markup characters shown on the active line: a distinct color so the
+   syntax is told apart from the text (and from screenshots). */
 .cm-mark {
-  color: var(--fg-muted);
+  color: var(--markup);
+  font-weight: 400;
+  font-style: normal;
+  text-decoration: none;
 }
 
 /* Headings */
@@ -145,7 +149,6 @@
   cursor: pointer;
 }
 .cm-task-marker {
-  color: var(--fg-muted);
   font-family: var(--font-mono);
 }
 .cm-task-done {
@@ -159,8 +162,8 @@
   padding-left: 0.6em;
   color: var(--fg-muted);
 }
-.cm-quote-mark {
-  color: var(--quote-border);
+.cm-table-delimiter {
+  color: var(--fg-muted);
 }
 
 /* Thematic break */

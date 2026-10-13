@@ -171,6 +171,16 @@ fn clear_recent_files<R: Runtime>(
     state.update(&app, Settings::clear_recent)
 }
 
+/// Opens a top-level menu from the keyboard (Alt+letter), see `menu.rs`.
+#[tauri::command]
+fn open_menu<R: Runtime>(
+    app: AppHandle<R>,
+    window: tauri::Window<R>,
+    id: String,
+) -> Result<bool, AppError> {
+    menu::popup_top_level(&app, window, &id).map_err(|e| AppError::Internal(e.to_string()))
+}
+
 #[tauri::command]
 fn display_path(path: String) -> String {
     cli::display_path(Path::new(&path))
@@ -259,6 +269,7 @@ pub fn run() {
             remove_recent_file,
             clear_recent_files,
             display_path,
+            open_menu,
             open_new_window,
         ])
         .build(tauri::generate_context!())

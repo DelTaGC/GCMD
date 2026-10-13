@@ -46,8 +46,8 @@ before bumping TypeScript). In Bash tool calls, `cargo` needs
   `window.gcmd.view` to inject text and inspect state). The real Tauri
   window can be captured and clicked from PowerShell
   (`System.Drawing` `CopyFromScreen` plus `user32` `SetCursorPos` /
-  `mouse_event`); `SendKeys` reaches the editor but Alt mnemonics do not
-  reach the native menu, so drive menus by mouse.
+  `mouse_event`); `SendKeys` reaches the editor. Alt+F/E/V/H open the
+  menus through `chrome/menuKeys.ts` (WebView2 swallows native mnemonics).
 
 ## Sub-agents
 

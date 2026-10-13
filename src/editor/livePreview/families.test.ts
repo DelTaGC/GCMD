@@ -27,9 +27,9 @@ describe("headings", () => {
     expect(kinds({ decorations: out.atomic, atomic: out.atomic })).toEqual(["hide@0-3"]);
   });
 
-  it("shows the marker when the cursor is on the heading line", () => {
+  it("shows the marker in the markup color when the cursor is on the heading line", () => {
     const out = run(visitHeadings, "## Title\n\ntext", 5);
-    expect(kinds(out)).toEqual(["line:cm-heading cm-heading-2@0-0"]);
+    expect(kinds(out)).toEqual(["line:cm-heading cm-heading-2@0-0", "mark:cm-mark@0-2"]);
   });
 
   it("hides a closing sequence with its leading spaces", () => {
@@ -61,9 +61,9 @@ describe("inline", () => {
     ]);
   });
 
-  it("keeps markers visible on the active line", () => {
+  it("keeps markers visible, in the markup color, on the active line", () => {
     const out = run(visitInline, "a **b**", 0);
-    expect(kinds(out)).toEqual(["mark:cm-strong@2-7"]);
+    expect(kinds(out)).toEqual(["mark:cm-mark@2-4", "mark:cm-strong@2-7", "mark:cm-mark@5-7"]);
   });
 
   it("hides inline code backticks, strikethrough tildes and escapes", () => {
@@ -120,8 +120,8 @@ describe("inline", () => {
 
 describe("lists", () => {
   it("replaces bullets with a glyph when inactive and styles ordered marks", () => {
-    const doc = "- a\n- b\n1. c";
-    const out = run(visitLists, doc, 10);
+    const doc = "- a\n- b\n1. c\n\nx";
+    const out = run(visitLists, doc, 14);
     expect(kinds(out)).toEqual([
       "widget:BulletWidget@0-1",
       "widget:BulletWidget@4-5",
@@ -131,7 +131,7 @@ describe("lists", () => {
 
   it("shows the raw bullet on the active line", () => {
     const out = run(visitLists, "- a\n- b", 1);
-    expect(kinds(out)).toEqual(["mark:cm-list-mark@0-1", "widget:BulletWidget@4-5"]);
+    expect(kinds(out)).toEqual(["mark:cm-mark@0-1", "widget:BulletWidget@4-5"]);
   });
 
   it("renders a checkbox in place of bullet and marker when inactive", () => {
@@ -148,7 +148,7 @@ describe("lists", () => {
 
   it("shows raw markers on the active task line", () => {
     const out = run(visitLists, "- [ ] open", 8);
-    expect(kinds(out)).toEqual(["mark:cm-list-mark@0-1", "mark:cm-task-marker@2-5"]);
+    expect(kinds(out)).toEqual(["mark:cm-mark@0-1", "mark:cm-mark cm-task-marker@2-5"]);
   });
 
   it("toggles a task marker in the text", () => {
@@ -167,16 +167,25 @@ describe("lists", () => {
 });
 
 describe("blockquote", () => {
-  it("adds one line class per quoted line and styles the marks", () => {
+  it("adds one line class per quoted line and hides inactive marks with their space", () => {
     const doc = "> a\n> > b\n\nx";
-    const out = run(visitBlockquote, doc);
-    const entries = listDecorations(out).map((e) => e.kind + "@" + String(e.from));
-    expect(entries).toEqual([
-      "line:cm-quote-line@0",
-      "mark:cm-quote-mark@0",
-      "line:cm-quote-line@4",
-      "mark:cm-quote-mark@4",
-      "mark:cm-quote-mark@6",
+    const out = run(visitBlockquote, doc, 11);
+    expect(kinds(out)).toEqual([
+      "line:cm-quote-line@0-0",
+      "hide@0-2",
+      "line:cm-quote-line@4-4",
+      "hide@4-6",
+      "hide@6-8",
+    ]);
+  });
+
+  it("shows the marks in the markup color on the active line", () => {
+    const out = run(visitBlockquote, "> a\n> b", 1);
+    expect(kinds(out)).toEqual([
+      "line:cm-quote-line@0-0",
+      "mark:cm-mark@0-1",
+      "line:cm-quote-line@4-4",
+      "hide@4-6",
     ]);
   });
 });
@@ -246,6 +255,6 @@ describe("table placeholder", () => {
     const out = run(visitTable, doc);
     const entries = listDecorations(out);
     expect(entries.filter((e) => e.kind.startsWith("line:"))).toHaveLength(3);
-    expect(entries.filter((e) => e.kind === "mark:cm-mark")).toHaveLength(5);
+    expect(entries.filter((e) => e.kind === "mark:cm-table-delimiter")).toHaveLength(5);
   });
 });

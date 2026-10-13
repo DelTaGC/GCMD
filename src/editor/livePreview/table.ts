@@ -15,7 +15,7 @@ export const visitTable: NodeVisitor = (ref, state, out) => {
     return undefined;
   }
   if (ref.name === "TableDelimiter") {
-    out.mark(ref.from, ref.to, "cm-mark");
+    out.mark(ref.from, ref.to, "cm-table-delimiter");
     return false;
   }
   return undefined;

@@ -5,6 +5,7 @@
 import type { ViewUpdate } from "@codemirror/view";
 import { createSession } from "./app/session";
 import { createBanner } from "./chrome/banner";
+import { installMenuMnemonics } from "./chrome/menuKeys";
 import { createSidebar } from "./chrome/sidebar";
 import { createThemeController } from "./chrome/theme";
 import { runCommand } from "./editor/commands";
@@ -78,6 +79,7 @@ async function bootstrap(): Promise<void> {
     return;
   }
 
+  installMenuMnemonics();
   await onMenu((id) => {
     if (id.startsWith(RECENT_PREFIX)) {
       void current.open(id.slice(RECENT_PREFIX.length));

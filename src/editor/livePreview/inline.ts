@@ -26,7 +26,11 @@ function styleWrapped(
   className: string,
 ): void {
   out.mark(ref.from, ref.to, className);
-  if (!isActive(state, ref.from, ref.to)) {
+  if (isActive(state, ref.from, ref.to)) {
+    for (const mark of ref.node.getChildren(markName)) {
+      out.mark(mark.from, mark.to, "cm-mark");
+    }
+  } else {
     hideChildren(ref.node, markName, out);
   }
 }
@@ -71,7 +75,11 @@ function decorateAutolink(ref: SyntaxNodeRef, state: EditorState, out: Collector
   if (url) {
     out.mark(url.from, url.to, "cm-link");
   }
-  if (!isActive(state, ref.from, ref.to)) {
+  if (isActive(state, ref.from, ref.to)) {
+    for (const mark of node.getChildren("LinkMark")) {
+      out.mark(mark.from, mark.to, "cm-mark");
+    }
+  } else {
     hideChildren(node, "LinkMark", out);
   }
 }

@@ -6,8 +6,10 @@
 //! `recent:<path>`. The menu is rebuilt whenever the settings change so the
 //! recent list and the theme check marks stay current.
 
-use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::{AppHandle, Runtime};
+use tauri::menu::{
+    CheckMenuItem, ContextMenu, Menu, MenuItem, MenuItemKind, PredefinedMenuItem, Submenu,
+};
+use tauri::{AppHandle, LogicalPosition, Runtime, Window};
 
 use crate::settings::{Settings, Theme};
 
@@ -15,6 +17,16 @@ use crate::settings::{Settings, Theme};
 pub const RECENT_PREFIX: &str = "recent:";
 /// Id of the "Clear Recent" item, handled in Rust rather than forwarded.
 pub const CLEAR_RECENT_ID: &str = "file.clearRecent";
+
+/// Top-level submenus with the approximate x offset (logical pixels) of
+/// their title in the menu bar, used to pop them up from the keyboard.
+/// `WebView2` swallows Alt+letter, so the frontend asks us to open the menu.
+const TOP_LEVEL: [(&str, f64); 4] = [
+    ("menu.file", 0.0),
+    ("menu.edit", 34.0),
+    ("menu.view", 70.0),
+    ("menu.help", 112.0),
+];
 
 fn item<R: Runtime>(
     app: &AppHandle<R>,
@@ -56,8 +68,9 @@ fn file_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
     } else {
         Some("CmdOrCtrl+Q")
     };
-    Submenu::with_items(
+    Submenu::with_id_and_items(
         app,
+        "menu.file",
         "&File",
         true,
         &[
@@ -82,8 +95,9 @@ fn file_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
 fn edit_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
     // Undo/Redo carry no accelerator on purpose: the key must reach the
     // webview so that an input field (search panel) can handle its own undo.
-    Submenu::with_items(
+    Submenu::with_id_and_items(
         app,
+        "menu.edit",
         "&Edit",
         true,
         &[
@@ -126,8 +140,9 @@ fn view_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
         settings.sidebar_visible,
         None::<&str>,
     )?;
-    Submenu::with_items(
+    Submenu::with_id_and_items(
         app,
+        "menu.view",
         "&View",
         true,
         &[&sidebar, &theme_submenu(app, settings)?],
@@ -135,8 +150,9 @@ fn view_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
 }
 
 fn help_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
-    Submenu::with_items(
+    Submenu::with_id_and_items(
         app,
+        "menu.help",
         "&Help",
         true,
         &[&item(app, "help.about", "&About GCMD", None)?],
@@ -154,6 +170,28 @@ pub fn build<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
             &help_menu(app)?,
         ],
     )
+}
+
+/// Pops up the top-level submenu `id` (`menu.file`, ...) below its title in
+/// the menu bar of `window`. Returns `Ok(false)` when the id is unknown.
+pub fn popup_top_level<R: Runtime>(
+    app: &AppHandle<R>,
+    window: Window<R>,
+    id: &str,
+) -> tauri::Result<bool> {
+    let Some((_, x)) = TOP_LEVEL.iter().find(|(name, _)| *name == id) else {
+        return Ok(false);
+    };
+    let Some(menu) = app.menu() else {
+        return Ok(false);
+    };
+    match menu.get(id) {
+        Some(MenuItemKind::Submenu(submenu)) => {
+            submenu.popup_at(window, LogicalPosition::new(*x, 0.0))?;
+            Ok(true)
+        }
+        _ => Ok(false),
+    }
 }
 
 /// Builds and installs the menu as the application menu.

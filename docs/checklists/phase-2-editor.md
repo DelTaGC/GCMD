@@ -21,6 +21,8 @@ and again after switching the theme (View > Theme).
 
 ## Live preview (cursor outside the block)
 
+- [ ] On an active line every markup character (`#`, `*`, `` ` ``, `~~`, `[`, `](url)`, `>`, `-`, `[ ]`, fences, `\`) shows in the markup color (dark red in light, salmon in dark), never in the text color.
+
 - [ ] Headings render larger without the `#`; moving the cursor onto the line reveals `# `.
 - [ ] Setext headings render as headings with a muted underline.
 - [ ] Bold, italic, bold-italic, strikethrough and inline code hide their markers off-line and show them on-line.
@@ -28,7 +30,7 @@ and again after switching the theme (View > Theme).
 - [ ] Bare URLs, `www.` links and emails are styled as links.
 - [ ] Bullets render as `•`; ordered markers stay as typed; the active line shows the raw marker.
 - [ ] Task items show a checkbox; clicking it toggles `[ ]`/`[x]` in the text without moving the cursor; done tasks are struck through.
-- [ ] Blockquotes have a left border; nested quotes are indented further.
+- [ ] Blockquotes have a left border and hide their `>` markers; the active line shows them.
 - [ ] `---`, `***`, `___` render as rules; the active line shows the characters.
 - [ ] Fenced code shows a language label instead of the opening fence, highlighted code (ts, python, rust, json, bash), and no closing fence; the active block shows both fences.
 - [ ] Indented code blocks use the monospace background.
@@ -47,7 +49,7 @@ and again after switching the theme (View > Theme).
 - [ ] Tab / Shift+Tab indent and outdent list items.
 - [ ] Ctrl+F opens find; Ctrl+H opens find with replace; F3 / Shift+F3 step through matches; Escape closes the panel.
 - [ ] Ctrl+Z / Ctrl+Y undo and redo; Edit > Undo / Redo do the same.
-- [ ] Alt+F / Alt+V open the menus from the keyboard while the editor has focus (known WebView2 limitation to confirm; menus always work by mouse).
+- [ ] Alt+F / Alt+E / Alt+V / Alt+H open the matching menu while the editor has focus; arrows, letters and Escape then work inside it.
 - [ ] The backtick, `^`, `¨` and `´` dead keys type their characters normally.
 
 ## Theme

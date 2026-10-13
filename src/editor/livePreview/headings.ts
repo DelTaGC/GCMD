@@ -36,7 +36,11 @@ export const visitHeadings: NodeVisitor = (ref: SyntaxNodeRef, state, out) => {
   if (atx) {
     const level = atx[1] ?? "1";
     out.line(ref.from, `cm-heading cm-heading-${level}`);
-    if (!isActive(state, ref.from, ref.to)) {
+    if (isActive(state, ref.from, ref.to)) {
+      for (const mark of ref.node.getChildren("HeaderMark")) {
+        out.mark(mark.from, mark.to, "cm-mark");
+      }
+    } else {
       hideAtxMarks(ref.node, state, out);
     }
     return false;

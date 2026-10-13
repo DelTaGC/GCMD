@@ -2,7 +2,8 @@
  * Lists and task items.
  *
  * Bullet markers (`-`, `*`, `+`) are replaced by a bullet glyph when the line
- * is not active; ordered markers are styled. Task markers (`[ ]` / `[x]`)
+ * is not active; ordered markers are muted. On the active line every marker
+ * shows in the markup color. Task markers (`[ ]` / `[x]`)
  * become a real checkbox when the line is not active. Clicking the checkbox
  * toggles the marker in the text through a normal transaction without moving
  * the selection, so the line stays inactive and the checkbox stays rendered.
@@ -93,7 +94,11 @@ function decorateListMark(ref: SyntaxNodeRef, state: EditorState, out: Collector
     out.hide(ref.from, taskMarker.from);
     return;
   }
-  if (list?.name === "BulletList" && !active) {
+  if (active) {
+    out.mark(ref.from, ref.to, "cm-mark");
+    return;
+  }
+  if (list?.name === "BulletList") {
     out.replace(ref.from, ref.to, bullet);
     return;
   }
@@ -102,7 +107,7 @@ function decorateListMark(ref: SyntaxNodeRef, state: EditorState, out: Collector
 
 function decorateTaskMarker(ref: SyntaxNodeRef, state: EditorState, out: Collector): void {
   if (isActive(state, ref.from, ref.to)) {
-    out.mark(ref.from, ref.to, "cm-task-marker");
+    out.mark(ref.from, ref.to, "cm-mark cm-task-marker");
     return;
   }
   const text = state.doc.sliceString(ref.from, ref.to);
