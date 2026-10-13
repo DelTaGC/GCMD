@@ -6,12 +6,19 @@ import { describe, expect, it } from "vitest";
 import { kinds, listDecorations, stateWith } from "../testing";
 import { visitBlockquote } from "./blockquote";
 import { infoLanguage, visitCodeFence } from "./codeFence";
-import { computeFamily, type FamilyOutput } from "./decorate";
+import {
+  collectBlocks,
+  computeFamily,
+  renderBlocks,
+  type BlockVisitor,
+  type FamilyOutput,
+} from "./decorate";
 import { visitHeadings } from "./headings";
 import { visitHr } from "./hr";
 import { visitInline } from "./inline";
 import { toggleTaskMarkerAt, visitLists } from "./lists";
-import { visitTable } from "./table";
+import { visitMermaidBlocks } from "./mermaid";
+import { visitTable, visitTableBlocks } from "./table";
 
 type Visitor = Parameters<typeof computeFamily>[2];
 
@@ -206,7 +213,7 @@ describe("code fences", () => {
     const out = run(visitCodeFence, doc, 0);
     expect(kinds(out)).toEqual([
       "line:cm-code-line cm-code-first@3-3",
-      "widget:LanguageLabelWidget@3-8",
+      "widget:LanguageSelectWidget@3-8",
       "line:cm-code-line@9-9",
       "line:cm-code-line cm-code-last@20-20",
       "widget:EmptyWidget@20-23",
@@ -233,7 +240,7 @@ describe("code fences", () => {
       "line:cm-code-line cm-code-last@4-4",
     ]);
     const inactive = run(visitCodeFence, "x\n\n```\ncode", 0);
-    expect(kinds(inactive)).toContain("widget:LanguageLabelWidget@3-6");
+    expect(kinds(inactive)).toContain("widget:LanguageSelectWidget@3-6");
     expect(kinds(inactive)).not.toContain("widget:EmptyWidget@7-11");
   });
 
@@ -249,12 +256,86 @@ describe("code fences", () => {
   });
 });
 
-describe("table placeholder", () => {
-  it("marks table lines and delimiters", () => {
-    const doc = "| a |\n|---|\n| 1 |";
-    const out = run(visitTable, doc);
-    const entries = listDecorations(out);
-    expect(entries.filter((e) => e.kind.startsWith("line:"))).toHaveLength(3);
-    expect(entries.filter((e) => e.kind === "mark:cm-table-delimiter")).toHaveLength(5);
+function blocks(visit: BlockVisitor, doc: string, cursor?: number): string[] {
+  const state = stateWith(doc, cursor);
+  const specs = collectBlocks(state, visit);
+  const rendered = renderBlocks(state, specs);
+  return kinds({ decorations: rendered, atomic: rendered });
+}
+
+describe("tables", () => {
+  const doc = "p\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\nq";
+  // Table: 3..32.
+
+  it("renders the whole table as one block widget when inactive", () => {
+    expect(blocks(visitTableBlocks, doc, 0)).toEqual(["widget:TableWidget@3-32"]);
+    expect(blocks(visitTableBlocks, doc, 34)).toEqual(["widget:TableWidget@3-32"]);
+  });
+
+  it("shows the raw rows when the selection touches the table", () => {
+    expect(blocks(visitTableBlocks, doc, 3)).toEqual([]);
+    expect(blocks(visitTableBlocks, doc, 32)).toEqual([]);
+    expect(blocks(visitTableBlocks, doc, 15)).toEqual([]);
+  });
+
+  it("styles the raw rows only while active", () => {
+    expect(listDecorations(run(visitTable, doc, 0))).toEqual([]);
+    const active = listDecorations(run(visitTable, doc, 5));
+    expect(active.filter((e) => e.kind.startsWith("line:cm-table-line"))).toHaveLength(3);
+    // Three pipes per cell row plus the delimiter row as one node.
+    expect(active.filter((e) => e.kind === "mark:cm-table-delimiter")).toHaveLength(7);
+  });
+
+  it("finds tables nested in lists and quotes", () => {
+    const nested = "- item\n\n  | a |\n  |---|\n  | 1 |\n\n> | q |\n> |---|\n> | r |";
+    expect(blocks(visitTableBlocks, nested, 0)).toEqual([
+      "widget:TableWidget@10-31",
+      "widget:TableWidget@35-56",
+    ]);
+  });
+});
+
+describe("mermaid", () => {
+  const doc = "p\n\n```mermaid\ngraph TD\n  A --> B\n```\n\nq";
+  // Fence: 3..36.
+
+  it("renders a mermaid fence as a block widget when inactive", () => {
+    expect(blocks(visitMermaidBlocks, doc, 0)).toEqual(["widget:MermaidWidget@3-36"]);
+    expect(blocks(visitMermaidBlocks, doc, 20)).toEqual([]);
+  });
+
+  it("ignores other fences", () => {
+    expect(blocks(visitMermaidBlocks, "```ts\nlet a;\n```", 0)).toEqual([]);
+  });
+
+  it("is left alone by the code fence family while inactive", () => {
+    expect(kinds(run(visitCodeFence, doc, 0))).toEqual([]);
+    const active = kinds(run(visitCodeFence, doc, 20));
+    expect(active).toContain("mark:cm-mark@3-6");
+    expect(active).toContain("mark:cm-code-info@6-13");
+  });
+});
+
+describe("images", () => {
+  const doc = 'see ![alt](img/a.png "t") here\n\nx';
+
+  it("replaces a local image with a widget when inactive", () => {
+    expect(kinds(run(visitInline, doc, 32))).toEqual(["widget:ImageWidget@4-25"]);
+  });
+
+  it("shows the source with markup colors when active", () => {
+    expect(kinds(run(visitInline, doc, 2))).toEqual([
+      "mark:cm-mark@4-6",
+      "mark:cm-image@4-25",
+      "mark:cm-mark@9-10",
+      "mark:cm-mark@10-11",
+      "mark:cm-url@11-20",
+      "mark:cm-mark@24-25",
+    ]);
+  });
+
+  it("keeps remote images as styled text", () => {
+    const remote = "![r](https://x.y/a.png)\n\nx";
+    expect(kinds(run(visitInline, remote, 26))).toEqual(["mark:cm-image@0-23"]);
   });
 });

@@ -51,7 +51,7 @@
    syntax is told apart from the text (and from screenshots). */
 .cm-mark {
   color: var(--markup);
-  font-weight: 400;
+  font-weight: 800;
   font-style: normal;
   text-decoration: none;
 }
@@ -204,7 +204,7 @@
   color: var(--fg-muted);
 }
 
-/* Tables (raw in phase 2) */
+/* Tables, raw mode (active block) */
 .cm-table-line {
   font-family: var(--font-mono);
   font-size: 0.9em;
@@ -306,4 +306,122 @@
 }
 .cm-editor .cm-searchMatch-selected {
   background: var(--search-match-selected);
+}
+
+/* Code fence language dropdown (replaces the opening fence when inactive) */
+.cm-code-select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  font: inherit;
+  font-size: 0.8em;
+  padding: 0 1.1em 0 0;
+  margin: 0;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--fg-muted) 50%),
+    linear-gradient(135deg, var(--fg-muted) 50%, transparent 50%);
+  background-position:
+    right 0.45em top 55%,
+    right 0.15em top 55%;
+  background-size: 0.3em 0.3em;
+  background-repeat: no-repeat;
+}
+.cm-code-select:hover,
+.cm-code-select:focus {
+  color: var(--fg);
+  outline: none;
+}
+
+/* Rendered tables */
+.cm-table-widget {
+  padding: 0.3em 0;
+  overflow-x: auto;
+}
+.cm-table-widget table {
+  border-collapse: collapse;
+  font-size: 0.95em;
+  line-height: 1.45;
+}
+.cm-table-widget th,
+.cm-table-widget td {
+  border: 1px solid var(--border);
+  padding: 0.3em 0.75em;
+  text-align: left;
+  vertical-align: top;
+  cursor: text;
+}
+.cm-table-widget th {
+  font-weight: 650;
+  background: var(--code-bg);
+}
+.cm-table-widget tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--code-bg) 50%, transparent);
+}
+.cm-table-widget code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+.cm-table-widget .cm-image-widget img {
+  max-height: 8em;
+}
+
+/* Mermaid diagrams */
+.cm-mermaid {
+  padding: 0.5em 0;
+  text-align: center;
+  cursor: text;
+}
+.cm-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+.cm-mermaid-pending {
+  color: var(--fg-muted);
+  font-size: 0.9em;
+  padding: 1em;
+  background: var(--code-bg);
+  border-radius: 6px;
+}
+.cm-mermaid-error {
+  text-align: left;
+  background: var(--banner-error);
+  border-radius: 6px;
+  padding: 0.6em 0.9em;
+}
+.cm-mermaid-error-title {
+  font-weight: 600;
+  font-size: 0.9em;
+}
+.cm-mermaid-error-message {
+  margin: 0.3em 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+}
+
+/* Inline images */
+.cm-image-widget img {
+  max-width: 100%;
+  max-height: 60vh;
+  vertical-align: middle;
+  border-radius: 4px;
+}
+.cm-image-broken {
+  color: var(--fg-muted);
+  font-style: italic;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  padding: 0 0.3em;
+}
+
+/* Ctrl+click on links */
+.cm-editor.cm-ctrl-held .cm-link,
+.cm-editor.cm-ctrl-held .cm-url {
+  cursor: pointer;
 }

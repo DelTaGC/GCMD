@@ -13,10 +13,14 @@ import {
   moveLineUp,
   redo,
   selectAll,
+  selectLineDown,
+  selectLineUp,
   undo,
 } from "@codemirror/commands";
 import { deleteMarkupBackward, insertNewlineContinueMarkup } from "@codemirror/lang-markdown";
 import { closeSearchPanel, findNext, findPrevious, openSearchPanel } from "@codemirror/search";
+import { detectFenceLanguage } from "./code";
+import { lineDownIntoBlocks, lineUpIntoBlocks } from "./cursor";
 import {
   insertLink,
   toggleEmphasis,
@@ -25,10 +29,16 @@ import {
   toggleStrong,
 } from "./format";
 import { setHeadingLevel } from "./headings";
-import { defineCommand, type CommandDef } from "./registry";
+import { defineCommand, type CommandDef, type CommandRunner } from "./registry";
+import { alignTable, nextCell, prevCell } from "./table";
 
 export { defineCommand, getCommand, listCommands, runCommand } from "./registry";
 export type { CommandDef, CommandRunner } from "./registry";
+
+/** Runs the commands in order until one handles the key. */
+function chain(...runners: CommandRunner[]): CommandRunner {
+  return (view) => runners.some((run) => run(view));
+}
 
 export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "format.strong", title: "Bold", run: toggleStrong }),
@@ -51,6 +61,32 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "line.delete", title: "Delete line", run: deleteLine }),
   defineCommand({ id: "line.indent", title: "Indent", run: indentMore }),
   defineCommand({ id: "line.outdent", title: "Outdent", run: indentLess }),
+  defineCommand({
+    id: "edit.tab",
+    title: "Next table cell, or indent",
+    run: chain(nextCell, indentMore),
+  }),
+  defineCommand({
+    id: "edit.shiftTab",
+    title: "Previous table cell, or outdent",
+    run: chain(prevCell, indentLess),
+  }),
+  defineCommand({ id: "table.nextCell", title: "Next table cell", run: nextCell }),
+  defineCommand({ id: "table.prevCell", title: "Previous table cell", run: prevCell }),
+  defineCommand({ id: "table.align", title: "Align table", run: alignTable }),
+  defineCommand({
+    id: "code.detectLanguage",
+    title: "Detect code block language",
+    run: detectFenceLanguage,
+  }),
+  defineCommand({ id: "cursor.lineDown", title: "Cursor down", run: lineDownIntoBlocks }),
+  defineCommand({ id: "cursor.lineUp", title: "Cursor up", run: lineUpIntoBlocks }),
+  defineCommand({
+    id: "cursor.selectLineDown",
+    title: "Extend selection down",
+    run: selectLineDown,
+  }),
+  defineCommand({ id: "cursor.selectLineUp", title: "Extend selection up", run: selectLineUp }),
   defineCommand({
     id: "line.continueMarkup",
     title: "New line (continue list or quote)",

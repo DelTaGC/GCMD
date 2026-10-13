@@ -40,7 +40,8 @@
     "@lezer/markdown": "^1.8.0",
     "@tauri-apps/api": "^2.12.3",
     "@tauri-apps/plugin-dialog": "~2.7.0",
-    "@tauri-apps/plugin-opener": "^2.7.1"
+    "@tauri-apps/plugin-opener": "^2.7.1",
+    "mermaid": "^12.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -8,6 +8,7 @@ pub mod cli;
 pub mod document;
 pub mod error;
 pub mod menu;
+pub mod paths;
 pub mod settings;
 
 use std::path::{Path, PathBuf};
@@ -186,6 +187,29 @@ fn display_path(path: String) -> String {
     cli::display_path(Path::new(&path))
 }
 
+/// Resolves `href` relative to `base` (the open document's path) and allows the
+/// result in the asset protocol scope so the webview can load it as an image.
+#[tauri::command]
+fn resolve_asset<R: Runtime>(
+    app: AppHandle<R>,
+    base: Option<String>,
+    href: String,
+) -> Result<String, AppError> {
+    let path = paths::resolve_href(base.as_deref().map(Path::new), &href)?;
+    app.asset_protocol_scope()
+        .allow_file(&path)
+        .map_err(|e| AppError::Internal(e.to_string()))?;
+    Ok(cli::display_path(&path))
+}
+
+/// Resolves `href` relative to `base` without touching any scope (used for
+/// Ctrl+click on `.md` links).
+#[tauri::command]
+fn resolve_path(base: Option<String>, href: String) -> Result<String, AppError> {
+    let path = paths::resolve_href(base.as_deref().map(Path::new), &href)?;
+    Ok(cli::display_path(&path))
+}
+
 /// Spawns another GCMD process, optionally with a file to open. One window
 /// edits one file; a second file means a second process.
 #[tauri::command]
@@ -271,6 +295,8 @@ pub fn run() {
             display_path,
             open_menu,
             open_new_window,
+            resolve_asset,
+            resolve_path,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

@@ -1,6 +1,7 @@
 /**
  * Inline marks: emphasis, strong, strikethrough, inline code, links,
- * autolinks, images (styled only until phase 3), escapes and inline HTML.
+ * autolinks, images (rendered inline, see `image.ts`), escapes and inline
+ * HTML.
  *
  * Content is styled with a mark decoration; the markup characters are hidden
  * when the line is not active.
@@ -9,6 +10,7 @@ import type { EditorState } from "@codemirror/state";
 import type { SyntaxNode, SyntaxNodeRef } from "@lezer/common";
 import { isActive } from "./activeBlock";
 import { livePreviewFamily, type Collector, type NodeVisitor } from "./decorate";
+import { imageWidget } from "./image";
 
 const LINK_PARENTS = new Set(["Link", "Image", "Autolink", "LinkReference"]);
 
@@ -84,6 +86,31 @@ function decorateAutolink(ref: SyntaxNodeRef, state: EditorState, out: Collector
   }
 }
 
+/**
+ * `![alt](path)`: the picture when inactive and local; the source with
+ * marks in the markup color when active; styled text for remote images.
+ */
+function decorateImage(ref: SyntaxNodeRef, state: EditorState, out: Collector): void {
+  const node = ref.node;
+  if (isActive(state, ref.from, ref.to)) {
+    out.mark(ref.from, ref.to, "cm-image");
+    for (const mark of node.getChildren("LinkMark")) {
+      out.mark(mark.from, mark.to, "cm-mark");
+    }
+    const url = node.getChild("URL");
+    if (url) {
+      out.mark(url.from, url.to, "cm-url");
+    }
+    return;
+  }
+  const widget = imageWidget(node, state);
+  if (widget) {
+    out.replace(ref.from, ref.to, widget);
+  } else {
+    out.mark(ref.from, ref.to, "cm-image");
+  }
+}
+
 export const visitInline: NodeVisitor = (ref, state, out) => {
   switch (ref.name) {
     case "Emphasis":
@@ -112,7 +139,7 @@ export const visitInline: NodeVisitor = (ref, state, out) => {
       }
       return false;
     case "Image":
-      out.mark(ref.from, ref.to, "cm-image");
+      decorateImage(ref, state, out);
       return false;
     case "Escape":
       if (!isActive(state, ref.from, ref.to)) {

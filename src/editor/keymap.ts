@@ -49,10 +49,19 @@ export const shortcuts: readonly Shortcut[] = [
   { key: "Shift-Alt-ArrowUp", command: "line.copyUp" },
   { key: "Shift-Alt-ArrowDown", command: "line.copyDown" },
   { key: "Mod-Shift-k", command: "line.delete" },
-  { key: "Tab", command: "line.indent" },
-  { key: "Shift-Tab", command: "line.outdent" },
+  { key: "Tab", command: "edit.tab" },
+  { key: "Shift-Tab", command: "edit.shiftTab" },
   { key: "Enter", command: "line.continueMarkup" },
   { key: "Backspace", command: "line.deleteMarkupBackward" },
+  // Vertical movement steps into rendered tables and diagrams; the shift
+  // variants are listed because overriding a key drops its base binding.
+  { key: "ArrowDown", command: "cursor.lineDown" },
+  { key: "ArrowUp", command: "cursor.lineUp" },
+  { key: "Shift-ArrowDown", command: "cursor.selectLineDown" },
+  { key: "Shift-ArrowUp", command: "cursor.selectLineUp" },
+  // Tables and code
+  { key: "Shift-Alt-f", command: "table.align" },
+  { key: "Shift-Alt-l", command: "code.detectLanguage" },
   // Editing
   { key: "Mod-z", command: "edit.undo" },
   { key: "Mod-y", command: "edit.redo" },

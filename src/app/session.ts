@@ -15,6 +15,7 @@ import type { ThemeController } from "../chrome/theme";
 import { fileName, updateTitle } from "../chrome/title";
 import { defineCommand } from "../editor/commands";
 import { replaceDocument } from "../editor/create";
+import { setDocumentPath } from "../editor/document";
 import { setEditorDark } from "../editor/theme";
 import { appInfo, openNewWindow } from "../ipc/app";
 import { askUnsavedChanges, pickOpenFile, pickSaveFile, showError, showInfo } from "../ipc/dialog";
@@ -62,7 +63,7 @@ export function createSession(deps: SessionDeps): Session {
   };
 
   const load = (newPath: string | null, text: string, newMeta: DocumentMeta): void => {
-    replaceDocument(view, text, theme.resolved === "dark");
+    replaceDocument(view, text, theme.resolved === "dark", newPath);
     path = newPath;
     meta = newMeta;
     banner.hide();
@@ -77,7 +78,10 @@ export function createSession(deps: SessionDeps): Session {
       await showError("Save failed", `Could not save "${target}":\n${describeError(err)}`);
       return false;
     }
-    path = target;
+    if (target !== path) {
+      path = target;
+      setDocumentPath(view, target);
+    }
     markSaved();
     await addRecentFile(target).catch((err: unknown) => {
       console.warn("addRecentFile failed", err);

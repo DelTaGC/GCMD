@@ -1,16 +1,33 @@
 /**
  * Shared machinery for live-preview element families.
  *
- * A family is a pure function `(state, ranges) => Collector output` that walks
- * the Lezer tree inside the given ranges and records decorations. This module
- * wraps such a function into a `ViewPlugin` limited to `view.visibleRanges`,
- * re-run when the document, viewport, selection or syntax tree changes, and
- * exposes the replaced ranges as atomic so the cursor never lands inside
- * hidden markup. Keeping the computation pure lets tests run it on a plain
- * `EditorState` without a DOM.
+ * Two kinds of family exist:
+ *
+ * - `livePreviewFamily(visitor)`: a view plugin limited to
+ *   `view.visibleRanges`, for marks, line classes, hidden markup and inline
+ *   widgets. CodeMirror forbids plugin decorations that cover line breaks or
+ *   that are block-level, so a fence line is replaced from `line.from` to
+ *   `line.to` only.
+ * - `blockFamily(visitor)`: a state field computed over the whole document,
+ *   for block widgets that replace several lines (tables, mermaid). The
+ *   visitor records every candidate block regardless of the selection; the
+ *   active-block rule is applied when the decoration set is rendered, so a
+ *   selection change never re-walks the tree.
+ *
+ * Both keep the computation pure (`EditorState` in, decorations out) so tests
+ * run on a plain state without a DOM. Replaced ranges of plugin families are
+ * exposed as atomic so the cursor never lands inside hidden markup.
  */
 import { syntaxTree } from "@codemirror/language";
-import type { EditorState, Range } from "@codemirror/state";
+import {
+  Facet,
+  StateEffect,
+  StateField,
+  type EditorState,
+  type Extension,
+  type Range,
+  type Transaction,
+} from "@codemirror/state";
 import {
   Decoration,
   EditorView,
@@ -20,7 +37,8 @@ import {
   type WidgetType,
 } from "@codemirror/view";
 import type { SyntaxNodeRef } from "@lezer/common";
-import type { Extension } from "@codemirror/state";
+import { editorDark } from "../theme";
+import { isActive } from "./activeBlock";
 
 /** A document range; `to` is exclusive as everywhere in CodeMirror. */
 export interface DocRange {
@@ -34,6 +52,16 @@ export interface FamilyOutput {
   decorations: DecorationSet;
   /** Only the replaced ranges, fed to `EditorView.atomicRanges`. */
   atomic: DecorationSet;
+}
+
+/**
+ * Asks every family to recompute, for example after a lazily loaded language
+ * or renderer became available. Dispatch it as `{ effects: refreshLivePreview.of(null) }`.
+ */
+export const refreshLivePreview = StateEffect.define();
+
+function hasRefresh(transactions: readonly Transaction[]): boolean {
+  return transactions.some((tr) => tr.effects.some((e) => e.is(refreshLivePreview)));
 }
 
 const hidden = Decoration.replace({});
@@ -71,7 +99,7 @@ export class Collector {
     }
   }
 
-  /** Replaces `[from, to)` with a widget. */
+  /** Replaces `[from, to)` with an inline widget. */
   replace(from: number, to: number, widget: WidgetType): void {
     if (to > from) {
       const range = Decoration.replace({ widget }).range(from, to);
@@ -131,7 +159,8 @@ export function livePreviewFamily(visit: NodeVisitor): Extension {
           update.docChanged ||
           update.viewportChanged ||
           update.selectionSet ||
-          syntaxTree(update.state) !== syntaxTree(update.startState)
+          syntaxTree(update.state) !== syntaxTree(update.startState) ||
+          hasRefresh(update.transactions)
         ) {
           const out = computeFamily(update.state, update.view.visibleRanges, visit);
           this.decorations = out.decorations;
@@ -146,4 +175,98 @@ export function livePreviewFamily(visit: NodeVisitor): Extension {
     },
   );
   return plugin;
+}
+
+// ---------------------------------------------------------------------------
+// Block families
+
+/** A multi-line range rendered as one block widget while it is not active. */
+export interface BlockSpec {
+  readonly from: number;
+  readonly to: number;
+  readonly widget: WidgetType;
+}
+
+/**
+ * Records every block of a family in document order. Return `false` to skip
+ * a node's children (do so for every leaf block so the walk stays cheap).
+ */
+export type BlockVisitor = (
+  node: SyntaxNodeRef,
+  state: EditorState,
+  blocks: BlockSpec[],
+) => boolean | undefined;
+
+/**
+ * Ranges of every rendered block, from every block family. Cursor commands
+ * use it to step into a block instead of jumping over its widget.
+ */
+export const blockRanges = Facet.define<readonly DocRange[], readonly DocRange[]>({
+  combine: (values) => values.flat().sort((a, b) => a.from - b.from),
+});
+
+/** Nodes whose children can contain block constructs. */
+const CONTAINERS = new Set(["Document", "BulletList", "OrderedList", "ListItem", "Blockquote"]);
+
+/** Collects the blocks of one family over the whole document. */
+export function collectBlocks(state: EditorState, visit: BlockVisitor): BlockSpec[] {
+  const blocks: BlockSpec[] = [];
+  syntaxTree(state).iterate({
+    enter: (node) => {
+      const result = visit(node, state, blocks);
+      if (result !== undefined) {
+        return result;
+      }
+      return CONTAINERS.has(node.name);
+    },
+  });
+  return blocks;
+}
+
+/** Applies the active-block rule: inactive blocks become block widgets. */
+export function renderBlocks(state: EditorState, blocks: readonly BlockSpec[]): DecorationSet {
+  const ranges: Range<Decoration>[] = [];
+  for (const block of blocks) {
+    if (!isActive(state, block.from, block.to)) {
+      ranges.push(
+        Decoration.replace({ widget: block.widget, block: true }).range(block.from, block.to),
+      );
+    }
+  }
+  return Decoration.set(ranges, true);
+}
+
+interface BlockFieldValue {
+  readonly blocks: readonly BlockSpec[];
+  readonly decorations: DecorationSet;
+}
+
+/** Wraps a block visitor into a state field providing block decorations. */
+export function blockFamily(visit: BlockVisitor): Extension {
+  const compute = (state: EditorState): BlockFieldValue => {
+    const blocks = collectBlocks(state, visit);
+    return { blocks, decorations: renderBlocks(state, blocks) };
+  };
+  const field = StateField.define<BlockFieldValue>({
+    create: compute,
+    update(value, tr) {
+      if (
+        tr.docChanged ||
+        syntaxTree(tr.state) !== syntaxTree(tr.startState) ||
+        tr.state.facet(editorDark) !== tr.startState.facet(editorDark) ||
+        hasRefresh([tr])
+      ) {
+        return compute(tr.state);
+      }
+      if (tr.selection) {
+        return { blocks: value.blocks, decorations: renderBlocks(tr.state, value.blocks) };
+      }
+      return value;
+    },
+    provide: (self) => [
+      EditorView.decorations.from(self, (value) => value.decorations),
+      blockRanges.from(self, (value) => value.blocks),
+    ],
+  });
+  return field;
 }

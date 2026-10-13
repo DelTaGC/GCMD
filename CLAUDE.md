@@ -39,6 +39,8 @@ before bumping TypeScript). In Bash tool calls, `cargo` needs
 - Create files with the Write tool, not heredocs: a multi-line
   `cat > file <<'EOF'` whose content contains an apostrophe is rejected
   whole. Write helper scripts to a file and run them with `bash <path>`.
+- **Edit files with the Edit tool, or `super_edit` for batched or multi-file replacements,
+  not `sed`** (fragile on Windows; fine inside WSL or the containers).
 - Windows CLI flags in Git Bash need doubled slashes
   (`taskkill //F //IM App.exe`), otherwise MSYS rewrites them as paths.
 - UI checks without a human: `npm run dev` serves the frontend at
@@ -48,6 +50,9 @@ before bumping TypeScript). In Bash tool calls, `cargo` needs
   (`System.Drawing` `CopyFromScreen` plus `user32` `SetCursorPos` /
   `mouse_event`); `SendKeys` reaches the editor. Alt+F/E/V/H open the
   menus through `chrome/menuKeys.ts` (WebView2 swallows native mnemonics).
+- Claude Code runs on the same PC I am using to work on other projects.
+  So when you randomly open the app to run tests at the same time I am typing in another window it can
+  insert text (document will show dirty) or steal focus. Take back focus and undo to start in a clear state.
 
 ## Sub-agents
 
@@ -131,3 +136,10 @@ docs/decisions/       ADRs; docs/checklists/ manual UI verification per phase
    checklist in both themes.
 3. For file I/O changes: edit, save, `git diff` the fixture shows only the
    intended lines (no EOL or whitespace churn).
+
+## Screenshots
+
+Downscale screenshots before analyzing them, for speed and cost:
+`magick input.png -resize '768x768>' output.jpg` (never upscales; `magick mogrify -resize '768x768>' -format jpg *.png` for a batch).
+Keep full resolution when the check depends on fine detail (small text, 1px borders, alignment), or crop the region instead: `magick input.png -crop WxH+X+Y +repage out.png`.
+If `magick` is missing, install a temporary portable copy for the session and tell the user so they can install it properly.

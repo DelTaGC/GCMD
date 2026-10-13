@@ -35,17 +35,32 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   mermaid, images), `Decoration.mark` for inline styling, and
   `Decoration.replace({})` to hide markup characters. Widgets must implement
   `eq()` so unchanged content is not re-rendered.
-- Decorations are computed from the Lezer syntax tree in a `ViewPlugin` and
-  limited to `view.visibleRanges`. Never walk the whole tree on every update
-  except for the sidebar outline, which is debounced.
-- Replaced ranges must be atomic (`EditorView.atomicRanges`) so the cursor
-  never lands inside hidden markup. `livePreview/decorate.ts` does this:
+- Inline work (marks, hidden markup, single-line widgets) is computed from
+  the Lezer syntax tree in a `ViewPlugin` limited to `view.visibleRanges`:
   a family is a pure `NodeVisitor` that records into a `Collector`, and
-  `livePreviewFamily(visitor)` wraps it into the view plugin.
-- Plugin decorations must not span line breaks; a fence line is replaced
-  from `line.from` to `line.to` only.
+  `livePreviewFamily(visitor)` in `livePreview/decorate.ts` wraps it. Its
+  replaced ranges are atomic (`EditorView.atomicRanges`) so the cursor never
+  lands inside hidden markup. Plugin decorations must not span line breaks;
+  a fence line is replaced from `line.from` to `line.to` only.
+- Multi-line widgets (tables, mermaid) are `blockFamily(visitor)`: a state
+  field over the whole document. The visitor records every block once per
+  document or tree change and must return `false` for every non-container
+  node so the walk stays cheap; selection changes only re-apply the
+  active-block rule to the cached list. Block ranges reach the cursor
+  commands through the `blockRanges` facet. Never walk the whole tree on
+  every selection change, and keep the sidebar outline debounced.
+- A lazily loaded resource (language parser, renderer) that arrives after a
+  computation dispatches `refreshLivePreview.of(null)` so families recompute.
 - Clicking a rendered widget moves the cursor into the block, which makes the
   block active and reveals its source. That is the only "edit mode" switch.
+  Widgets that handle their own clicks return `true` from `ignoreEvent` for
+  everything but `mousedown` and dispatch the selection themselves.
+- Widgets build DOM with `document.createElement`, never `innerHTML`, except
+  for mermaid's sanitized SVG. Things that resolve asynchronously (images,
+  diagrams, languages) check `isConnected` before touching their element and
+  call `view.requestMeasure()` when their height changed.
+- The document path is editor state (`editor/document.ts`, `documentPath`
+  facet); families read it from the state, never from the session.
 - A decoration bug that changes text is a release blocker.
 
 ## Adding a live-preview element

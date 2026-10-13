@@ -13,6 +13,7 @@ is not OS integration belongs in the TypeScript frontend.
 | `menu.rs`     | Native menu, recent-files submenu, menu events forwarded to the window                                      |
 | `settings.rs` | Versioned JSON settings in the app-config dir; migrations                                                   |
 | `cli.rs`      | Launch arguments and macOS `RunEvent::Opened`; resolves to an absolute path                                 |
+| `paths.rs`    | Resolves markdown hrefs (relative, absolute, `file://`) to existing files next to the open document         |
 
 ## Rules
 
@@ -30,6 +31,9 @@ is not OS integration belongs in the TypeScript frontend.
   `generate_handler!`, a typed wrapper in `src/ipc/`, and, if it uses a
   plugin, the matching permission in `capabilities/default.json`. Keep
   permissions minimal; no `fs:default`, no `shell:allow-execute`.
+- Images load through the `asset:` protocol. The scope in `tauri.conf.json`
+  stays empty (never a static `**`); `resolve_asset` allows each resolved
+  image file one by one at runtime (`asset_protocol_scope().allow_file`).
 - Multiple instances are a feature: do not add `tauri-plugin-single-instance`.
 - Settings and the recent list live outside the install directory (Tauri
   `app_config_dir`) so updates never touch them.

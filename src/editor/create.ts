@@ -16,7 +16,9 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 import "./commands";
+import { documentPathExtension } from "./document";
 import { buildKeymap } from "./keymap";
+import { linkOpener } from "./links";
 import { livePreview } from "./livePreview";
 import { editorTheme } from "./theme";
 
@@ -24,6 +26,8 @@ export interface EditorOptions {
   parent: HTMLElement;
   doc: string;
   dark: boolean;
+  /** Path of the file being edited; `null` for an untitled document. */
+  path?: string | null;
   onUpdate?: (update: ViewUpdate) => void;
 }
 
@@ -41,6 +45,7 @@ export function createEditorState(
   doc: string,
   dark: boolean,
   extra: Extension[] = [],
+  path: string | null = null,
 ): EditorState {
   return EditorState.create({
     doc,
@@ -52,8 +57,10 @@ export function createEditorState(
       EditorView.lineWrapping,
       EditorState.allowMultipleSelections.of(false),
       indentUnit.of("  "),
+      documentPathExtension(path),
       markdownExtension(),
       livePreview,
+      linkOpener,
       search({ top: true }),
       buildKeymap(),
       editorTheme(dark),
@@ -69,19 +76,25 @@ export function createEditor(options: EditorOptions): EditorView {
     extra.push(EditorView.updateListener.of(onUpdate));
   }
   return new EditorView({
-    state: createEditorState(options.doc, options.dark, extra),
+    state: createEditorState(options.doc, options.dark, extra, options.path ?? null),
     parent: options.parent,
   });
 }
 
 /** Replaces the document, resetting history (used when opening a file). */
-export function replaceDocument(view: EditorView, doc: string, dark: boolean): void {
+export function replaceDocument(
+  view: EditorView,
+  doc: string,
+  dark: boolean,
+  path: string | null,
+): void {
   const listeners = view.state.facet(EditorView.updateListener);
   view.setState(
     createEditorState(
       doc,
       dark,
       listeners.map((listener) => EditorView.updateListener.of(listener)),
+      path,
     ),
   );
 }

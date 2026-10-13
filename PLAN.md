@@ -207,12 +207,13 @@ Each phase ends with: tests green, lint clean, a manual verification checklist r
 - Tests: document round-trip (CRLF/LF/BOM/UTF-8/no trailing newline), active-block logic, GFM spec harness reporting pass/fail counts (not yet gating).
 - **Done when:** you can set GCMD as the default `.md` app on Windows, double-click a file, edit, save, and `git diff` shows only the lines you changed.
 
-### Phase 3 — Blocks
+### Phase 3 — Blocks — DONE 2026-10-13
 
-- Tables: widget rendering, raw mode on entry, Tab/Shift+Tab cell navigation, align-on-exit command.
+- Tables: widget rendering, raw mode on entry, Tab/Shift+Tab cell navigation, align-on-exit command (whitespace-only changes, only after an edit).
 - Mermaid: lazy load, SVG widget, source on click, inline errors, render cache by content hash.
-- Code fences: language dropdown widget, heuristic auto-detect for unlabeled fences, lazy loading of non-core languages.
-- Images: inline local images relative to the file; Ctrl+click on links.
+- Code fences: language dropdown widget, heuristic auto-detect for unlabeled fences, lazy loading of all languages (no eager core set, see ADR 0007).
+- Images: inline local images relative to the file (asset protocol, per-file scope); Ctrl+click on links.
+- Arrow keys step into rendered blocks instead of skipping them (`cursor.*` commands).
 - **Done when:** the sample document renders every block correctly in both themes with no cursor jumps when entering/leaving blocks.
 
 ### Phase 4 — Navigation and editing UX

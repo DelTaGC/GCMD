@@ -161,6 +161,13 @@ A reference link to [the spec][gfm] and a collapsed one [gfm][].
 
 [gfm]: https://github.github.com/gfm/
 
+## Local links and images
+
+Ctrl+click opens [the plan](../../PLAN.md) in a new GCMD window and
+[the GFM spec](https://github.github.com/gfm/) in the browser.
+A missing image shows its alt text: ![not found](missing/picture.png)
+Remote images stay as text: ![remote](https://example.com/image.png)
+
 ## Edge cases
 
 Trailing spaces on the next line:    

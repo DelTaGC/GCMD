@@ -34,7 +34,7 @@ and again after switching the theme (View > Theme).
 - [ ] `---`, `***`, `___` render as rules; the active line shows the characters.
 - [ ] Fenced code shows a language label instead of the opening fence, highlighted code (ts, python, rust, json, bash), and no closing fence; the active block shows both fences.
 - [ ] Indented code blocks use the monospace background.
-- [ ] Tables and mermaid blocks show raw text in monospace (phase 3 renders them).
+- [ ] Tables and mermaid blocks render as widgets (see phase-3-blocks.md); the active block shows raw text in monospace.
 - [ ] Escapes like `\*` hide the backslash off-line.
 - [ ] Arrow keys never land inside hidden markup; the cursor moves from the text to the next line.
 - [ ] Clicking a rendered element puts the cursor there and reveals the source without a jump.
