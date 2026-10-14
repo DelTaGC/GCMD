@@ -7,6 +7,7 @@ buffer _is_ the markdown; markup shows only in the block being edited.
 
 Roadmap and rationale: `PLAN.md`. Decisions: `docs/decisions/`. Budgets and
 measurements: `docs/perf.md`. Parser deviations: `docs/known-deviations.md`.
+Releases and updates: `docs/release.md`.
 Area-specific rules: `src/CLAUDE.md` (frontend), `src-tauri/CLAUDE.md` (Rust).
 
 ## Non-goals
@@ -32,7 +33,14 @@ npm run bench          # DOM-free timings over the generated fixtures (docs/perf
 npm run linux:image    # build the Docker image for Linux checks and bundles (once)
 npm run linux:check    # npm run check on Linux inside Docker
 npm run linux:build    # .deb and AppImage -> src-tauri/target/linux-bundle/
+npm run release:version -- X.Y.Z   # set the version everywhere (no arg: check, part of npm run check)
+npm run release:build  # signed bundles + .sig (needs TAURI_SIGNING_PRIVATE_KEY)
+npm run release:manifest -- --base-url <url> --out-dir <dir>   # latest.json for local update tests
 ```
+
+Releases come from a `vX.Y.Z` tag through `.github/workflows/release.yml`
+(draft GitHub release, published by hand); steps in `docs/release.md`.
+License: GPL-3.0-or-later (ADR 0011); new dependencies must be compatible.
 
 Node 24 (see `.nvmrc`, `engines.node` >= 22.22.1). TypeScript stays on the
 newest major that `typescript-eslint` supports (check its `peerDependencies`

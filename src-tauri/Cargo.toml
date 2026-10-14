@@ -3,6 +3,7 @@ name = "gcmd"
 version = "0.1.0"
 description = "GCMD - a lightweight single-document GitHub Flavored Markdown editor"
 authors = ["Gaetan Cretton"]
+license = "GPL-3.0-or-later"
 edition = "2024"
 # Let chains (`if let .. && let ..`) need 1.88; the MSRV-aware resolver also
 # uses this to pick dependency versions, so keep it current.
@@ -26,6 +27,7 @@ tauri-plugin-dialog = "2"
 tauri-plugin-window-state = "2"
 thiserror = "2"
 notify-debouncer-mini = "0.7.0"
+tauri-plugin-updater = "2"
 
 [lints.rust]
 unsafe_code = "forbid"
@@ -50,3 +52,6 @@ strip = true
 
 [dev-dependencies]
 tempfile = "3"
+
+[target."cfg(windows)".dependencies]
+sysinfo = { version = "0.38.4", default-features = false, features = ["system"] }

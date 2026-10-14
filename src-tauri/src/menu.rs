@@ -11,7 +11,7 @@ use tauri::menu::{
 };
 use tauri::{AppHandle, LogicalPosition, Runtime, Window};
 
-use crate::settings::{Settings, Theme};
+use crate::settings::{Settings, Theme, UpdateCheck};
 
 /// Prefix of recent-file item ids; the rest is the path.
 pub const RECENT_PREFIX: &str = "recent:";
@@ -76,7 +76,7 @@ const EXIT_ACCELERATOR: Option<&str> = if cfg!(target_os = "windows") {
 /// Quit goes through our `file.exit` command (not the predefined item) so the
 /// unsaved-changes prompt still runs.
 #[cfg(target_os = "macos")]
-fn app_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
+fn app_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Submenu<R>> {
     Submenu::with_id_and_items(
         app,
         "menu.app",
@@ -84,6 +84,8 @@ fn app_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
         true,
         &[
             &item(app, "help.about", "About GCMD", None)?,
+            &item(app, "help.checkUpdates", "Check for Updates...", None)?,
+            &auto_update_item(app, settings)?,
             &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::services(app, None)?,
             &PredefinedMenuItem::separator(app)?,
@@ -280,14 +282,32 @@ fn view_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
     )
 }
 
-fn help_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
-    Submenu::with_id_and_items(
+fn auto_update_item<R: Runtime>(
+    app: &AppHandle<R>,
+    settings: &Settings,
+) -> tauri::Result<CheckMenuItem<R>> {
+    CheckMenuItem::with_id(
         app,
-        "menu.help",
-        "&Help",
+        "help.autoUpdate",
+        "Check &Automatically",
         true,
-        &[&item(app, "help.about", "&About GCMD", None)?],
+        settings.updates.check == UpdateCheck::Auto,
+        None::<&str>,
     )
+}
+
+fn help_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Submenu<R>> {
+    let submenu = Submenu::with_id(app, "menu.help", "&Help", true)?;
+    // On macOS the update items and About live in the application menu.
+    if !cfg!(target_os = "macos") {
+        submenu.append_items(&[
+            &item(app, "help.checkUpdates", "Check for &Updates...", None)?,
+            &auto_update_item(app, settings)?,
+            &PredefinedMenuItem::separator(app)?,
+        ])?;
+    }
+    submenu.append(&item(app, "help.about", "&About GCMD", None)?)?;
+    Ok(submenu)
 }
 
 /// Builds the full menu for the given settings. On macOS the application
@@ -295,12 +315,12 @@ fn help_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
 pub fn build<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
     #[cfg(target_os = "macos")]
-    menu.append(&app_menu(app)?)?;
+    menu.append(&app_menu(app, settings)?)?;
     menu.append_items(&[
         &file_menu(app, settings)?,
         &edit_menu(app)?,
         &view_menu(app, settings)?,
-        &help_menu(app)?,
+        &help_menu(app, settings)?,
     ])?;
     Ok(menu)
 }

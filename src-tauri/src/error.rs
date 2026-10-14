@@ -18,6 +18,9 @@ pub enum AppError {
     /// Settings could not be parsed or stored (kind `settings`).
     #[error("{0}")]
     Settings(String),
+    /// Checking for, downloading or installing an update failed (kind `update`).
+    #[error("{0}")]
+    Update(String),
     /// An unexpected internal failure (kind `internal`).
     #[error("{0}")]
     Internal(String),
@@ -31,6 +34,7 @@ impl AppError {
             Self::Encoding(_) => "encoding",
             Self::InvalidPath(_) => "invalidPath",
             Self::Settings(_) => "settings",
+            Self::Update(_) => "update",
             Self::Internal(_) => "internal",
         }
     }
@@ -67,6 +71,7 @@ mod tests {
         assert_eq!(AppError::Encoding(String::new()).kind(), "encoding");
         assert_eq!(AppError::InvalidPath(String::new()).kind(), "invalidPath");
         assert_eq!(AppError::Settings(String::new()).kind(), "settings");
+        assert_eq!(AppError::Update(String::new()).kind(), "update");
         assert_eq!(AppError::Internal(String::new()).kind(), "internal");
     }
 

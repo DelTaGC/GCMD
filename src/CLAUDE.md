@@ -28,6 +28,11 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   `editor/outline.ts` (pure, tree-based), recomputed debounced after the
   document or tree changed; selection changes only move the highlight.
   Clicking a heading goes through `commands/cursor.ts` `jumpTo`.
+- `app/updates.ts` is the self-update flow (ADR 0010): startup check,
+  `help.checkUpdates` / `help.autoUpdate` commands, the update banner, and
+  install after the session's unsaved-changes prompt. The rules (when to
+  check, skipped versions, texts) are pure functions in
+  `app/updatePolicy.ts`.
 - `editor/quickbar.ts` is the selection toolbar: a `showTooltip` state field
   (visible when the main selection is non-empty, no drag in progress, not
   dismissed) whose buttons run registry commands. `edit.escape` dismisses

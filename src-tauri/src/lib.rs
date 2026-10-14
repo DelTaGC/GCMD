@@ -10,6 +10,7 @@ pub mod error;
 pub mod menu;
 pub mod paths;
 pub mod settings;
+pub mod updater;
 pub mod watcher;
 
 use std::path::{Path, PathBuf};
@@ -20,7 +21,8 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 
 use crate::document::{Document, DocumentMeta};
 use crate::error::AppError;
-use crate::settings::{Settings, Theme};
+use crate::settings::{Settings, Theme, UpdateCheck};
+use crate::updater::{PendingUpdate, UpdateInfo};
 use crate::watcher::DocumentWatcher;
 
 /// Static information about the running application, shown in the About
@@ -28,17 +30,17 @@ use crate::watcher::DocumentWatcher;
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct AppInfo {
     pub name: &'static str,
-    pub version: &'static str,
+    pub version: String,
 }
 
 impl AppInfo {
-    /// Values come from `Cargo.toml` at compile time so they never drift from
-    /// the package version.
+    /// The version is the one the updater compares against: Tauri's package
+    /// version (`tauri.conf.json`, which reads `package.json`).
     #[must_use]
-    pub const fn current() -> Self {
+    pub fn new(version: String) -> Self {
         Self {
             name: "GCMD",
-            version: env!("CARGO_PKG_VERSION"),
+            version,
         }
     }
 }
@@ -106,8 +108,8 @@ impl AppState {
 }
 
 #[tauri::command]
-fn app_info() -> AppInfo {
-    AppInfo::current()
+fn app_info<R: Runtime>(app: AppHandle<R>) -> AppInfo {
+    AppInfo::new(app.package_info().version.to_string())
 }
 
 #[tauri::command]
@@ -213,6 +215,66 @@ fn clear_recent_files<R: Runtime>(
     state.update(&app, Settings::clear_recent)
 }
 
+/// Checks the update endpoint, records the time of the check and returns the
+/// newer version, if any. Policy (when to check, skipped versions) is the
+/// frontend's (`src/app/updates.ts`).
+#[tauri::command]
+async fn update_check<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    pending: State<'_, PendingUpdate>,
+) -> Result<Option<UpdateInfo>, AppError> {
+    let info = updater::check(&app, &pending).await?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX));
+    state.update(&app, |s| s.updates.last_check_ms = Some(now))?;
+    Ok(info)
+}
+
+/// Downloads and installs the update found by `update_check`, then restarts.
+/// The frontend has already resolved unsaved changes.
+#[tauri::command]
+async fn update_install<R: Runtime>(
+    app: AppHandle<R>,
+    pending: State<'_, PendingUpdate>,
+) -> Result<(), AppError> {
+    updater::install(&app, &pending).await
+}
+
+/// Other GCMD processes that installing an update would close (Windows only).
+#[tauri::command]
+async fn update_other_instances() -> Result<usize, AppError> {
+    tauri::async_runtime::spawn_blocking(updater::other_instances)
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))
+}
+
+/// Remembers a version the user does not want to hear about again.
+#[tauri::command]
+fn update_skip<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    version: String,
+) -> Result<Settings, AppError> {
+    state.update(&app, |s| s.updates.skipped_version = Some(version))
+}
+
+#[tauri::command]
+fn set_auto_update<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<Settings, AppError> {
+    state.update(&app, |s| {
+        s.updates.check = if enabled {
+            UpdateCheck::Auto
+        } else {
+            UpdateCheck::Manual
+        };
+    })
+}
+
 /// Opens a top-level menu from the keyboard (Alt+letter), see `menu.rs`.
 #[tauri::command]
 fn open_menu<R: Runtime>(
@@ -294,18 +356,15 @@ fn on_menu_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
 
 fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let settings_path = app.path().app_config_dir()?.join("settings.json");
-    let settings = match settings::load(&settings_path) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("settings unreadable, using defaults: {e}");
-            Settings::default()
-        }
-    };
+    let settings = settings::load_or_recover(&settings_path);
     let cwd = std::env::current_dir()?;
     let pending = cli::file_argument(std::env::args_os().skip(1), &cwd);
     let handle = app.handle().clone();
     menu::install(&handle, &settings)?;
     app.manage(AppState::new(settings_path, settings, pending));
+    app.manage(PendingUpdate::default());
+    app.handle()
+        .plugin(tauri_plugin_updater::Builder::new().build())?;
     Ok(())
 }
 
@@ -340,6 +399,11 @@ pub fn run() {
             open_new_window,
             resolve_asset,
             resolve_path,
+            update_check,
+            update_install,
+            update_other_instances,
+            update_skip,
+            set_auto_update,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
@@ -363,9 +427,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn app_info_reports_package_version() {
-        let info = AppInfo::current();
-        assert_eq!(info.name, "GCMD");
-        assert_eq!(info.version, env!("CARGO_PKG_VERSION"));
+    fn app_info_serializes_name_and_version() {
+        let json = serde_json::to_string(&AppInfo::new("1.2.3".into())).unwrap();
+        assert_eq!(json, r#"{"name":"GCMD","version":"1.2.3"}"#);
     }
 }

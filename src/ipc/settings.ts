@@ -6,11 +6,19 @@ import { invoke } from "@tauri-apps/api/core";
 
 export type ThemePreference = "light" | "dark" | "system";
 
+export interface UpdateSettings {
+  check: "auto" | "manual";
+  /** Last completed check, Unix milliseconds. */
+  lastCheckMs: number | null;
+  skippedVersion: string | null;
+}
+
 export interface Settings {
   schemaVersion: number;
   theme: ThemePreference;
   recentFiles: string[];
   sidebarVisible: boolean;
+  updates: UpdateSettings;
 }
 
 export function getSettings(): Promise<Settings> {

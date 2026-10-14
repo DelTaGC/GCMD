@@ -5,6 +5,7 @@
 import type { ViewUpdate } from "@codemirror/view";
 import { createOutlineController } from "./app/outline";
 import { createSession } from "./app/session";
+import { createUpdateController } from "./app/updates";
 import { createBanner } from "./chrome/banner";
 import { installMenuMnemonics } from "./chrome/menuKeys";
 import { createSidebar } from "./chrome/sidebar";
@@ -32,6 +33,7 @@ const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   recentFiles: [],
   sidebarVisible: false,
+  updates: { check: "auto", lastCheckMs: null, skippedVersion: null },
 };
 
 async function loadSettings(): Promise<Settings> {
@@ -115,11 +117,21 @@ async function bootstrap(): Promise<void> {
   });
   await onCloseRequested(() => current.confirmClose());
 
+  const updates = createUpdateController({
+    banner,
+    confirmClose: () => current.confirmClose(),
+    updates: settings.updates,
+  });
+
   const initial = await launchArgs();
   if (initial !== null) {
     await current.open(initial);
   }
   view.focus();
+  // Dev builds never self-update (the version in a dev build is not a release).
+  if (!import.meta.env.DEV) {
+    updates.scheduleStartupCheck();
+  }
 }
 
 bootstrap().catch((err: unknown) => {

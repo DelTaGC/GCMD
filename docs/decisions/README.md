@@ -14,4 +14,5 @@ before introducing a new technology or changing one of these.
 | [0007](0007-block-widgets-mermaid-and-assets.md) | Block widgets as state fields; lazy mermaid; per-file asset scope |
 | [0008](0008-file-watcher.md)                     | `notify` watcher on the parent directory; the frontend reconciles |
 | [0009](0009-cross-platform-builds.md)            | Linux builds through Docker, all platforms through GitHub Actions |
-| [0009](0009-cross-platform-builds.md)            | Linux builds through Docker, all platforms through GitHub Actions |
+| [0010](0010-self-update.md)                      | Self-update with tauri-plugin-updater and GitHub Releases         |
+| [0011](0011-license.md)                          | GPL-3.0-or-later; elkjs left out of the build                     |

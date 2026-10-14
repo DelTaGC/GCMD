@@ -3,6 +3,8 @@
   "private": true,
   "version": "0.1.0",
   "description": "GCMD - a lightweight single-document GitHub Flavored Markdown editor",
+  "license": "GPL-3.0-or-later",
+  "author": "Gaetan Cretton",
   "type": "module",
   "engines": {
     "node": ">=22.22.1"
@@ -28,7 +30,10 @@
     "linux:image": "docker build -t gcmd-linux-build tools/linux",
     "linux:check": "bash tools/linux/run.sh check",
     "linux:build": "bash tools/linux/run.sh build",
-    "check": "npm run typecheck && npm run lint && npm test && npm run test:rust",
+    "release:version": "node tools/release/version.mjs",
+    "release:manifest": "node tools/release/manifest.mjs",
+    "release:build": "tauri build --config src-tauri/tauri.release.conf.json",
+    "check": "node tools/release/version.mjs && npm run typecheck && npm run lint && npm test && npm run test:rust",
     "prepare": "simple-git-hooks"
   },
   "dependencies": {

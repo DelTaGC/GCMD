@@ -231,21 +231,15 @@ Each phase ends with: tests green, lint clean, a manual verification checklist r
 - Linux: Docker image and runner (`tools/linux/`, ADR 0009); `npm run check` passes on Linux. macOS: application menu, predefined Edit items for Cmd+Z/X/C/V/A, Quit through the unsaved prompt, no Alt+letter interception; built by `.github/workflows/build.yml` once the repository has a remote (no Mac on hand).
 - **Done when:** budgets met on Windows and the app runs on at least one other platform. The Linux `.deb` and AppImage build from `npm run linux:build`; running them on a Linux desktop is in the phase 5 checklist.
 
-### Phase 6 — Self-update — PLANNED
+### Phase 6 — Self-update and license — DONE 2026-10-14 (first release pending the repository and the signing key)
 
-`tauri-plugin-updater` reads a JSON manifest over HTTPS, compares its version with the running one, downloads the platform package, checks it against the public key built into the app, then installs and relaunches. Settings live in the app-config dir, so an update never touches them. Built and tested end to end on this machine first; hosting (GitHub Releases or another static HTTPS host) is the last step.
-
-1. **ADR 0010 (updater):** manifest format, updater signing key (separate from OS code signing, which stays out of scope), hosting options, check policy, the multi-instance install rule below.
-2. **Single version source:** `tools/release/bump.mjs` sets the version in `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json` and checks they agree (`npm run check` fails on a mismatch).
-3. **Signing key:** `npx tauri signer generate`; private key and password stored outside the repo (password manager plus an offline backup: losing the key strands every installed copy), passed to builds as `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`; public key in `tauri.conf.json` `plugins.updater.pubkey`; `bundle.createUpdaterArtifacts: true`.
-4. **Rust side (`updater.rs`):** the plugin driven from Rust and exposed as our own commands (`update_check`, `update_install`) with one permission each, consistent with invariant 8; the frontend never gets the generic updater or process permissions. Restart through `AppHandle::restart`.
-5. **Multi-instance rule (Windows):** the NSIS installer replaces the exe; other open GCMD processes hold it, and Tauri's installer offers to kill running copies, which would lose unsaved work. Verify the actual behavior first; then install only when this is the last GCMD process, otherwise ask the user to close the other windows (or defer the install to the next quit). macOS and Linux AppImage replace the bundle in place and do not have this problem.
-6. **UX:** check in the background a few seconds after startup (never on the cold-start path), at most once a day, plus Help > Check for updates. A banner (reuses `chrome/` banners): "GCMD x.y.z is available" with Install and restart / Later / Skip this version / release notes. A dirty document goes through the existing unsaved prompt before restart. Setting `updates.check: "auto" | "manual"` with a `schemaVersion` bump and migration; last-check time and skipped version persist in settings. Manual checklist in `docs/checklists/`.
-7. **Release tooling:** `tools/release/manifest.mjs` builds `latest.json` (version, notes, pub_date, per-platform url + signature) from the bundle output.
-8. **Local end-to-end test:** install 0.1.0 built with a test config overlay pointing at `http://localhost:<port>/latest.json` (`dangerousInsecureTransportProtocol` only in that overlay), serve 0.1.1 from a local static server, update, confirm settings and the recent-files list survive; also a tampered signature is rejected.
-9. **Hosting (needs a decision):** GitHub Releases with `tauri-apps/tauri-action` extending `build.yml` on version tags (endpoint `https://github.com/<owner>/<repo>/releases/latest/download/latest.json`; the releases must be public, so a private source repo needs a separate public releases repo or another host), or any static HTTPS host (Cloudflare R2/Pages, Netlify, own server) fed by `npm run release`.
-
-- **Done when:** an installed build on Windows updates itself from a hosted manifest without losing settings or unsaved work, a bad signature is refused, and macOS/Linux AppImage updates work from the CI builds.
+- `tauri-plugin-updater` driven from Rust (`updater.rs`, five commands of our own, no plugin permission for the frontend); manifest `latest.json` on GitHub Releases; signatures from an updater key (separate from OS code signing) with `requireSignedVersion` (ADR 0010).
+- Frontend: background check 5 s after startup, at most once a day, never in dev builds; Help > Check for Updates and Check Automatically; banner with Install and Restart / Release Notes / Skip This Version; install goes through the unsaved-changes prompt. Settings gained `updates` (no schema bump).
+- Windows: the passive NSIS installer force-closes every running GCMD (Restart Manager), so installing waits until no other GCMD window is open (matched by executable name; an exact-path match failed in the local test).
+- Releases: `vX.Y.Z` tag → `.github/workflows/release.yml` (tauri-action) → draft release with signed bundles and `latest.json`; notes from `CHANGELOG.md`; one version source checked by `npm run check` (`tools/release/`, `docs/release.md`).
+- Local end-to-end test on Windows (side-by-side test identity, throwaway key, local server): 0.1.0 → 0.1.1 updated with settings intact; a replayed older bundle under a newer version and a tampered bundle were both refused.
+- License GPL-3.0-or-later (ADR 0011); `elkjs` (EPL-2.0) replaced by a stub, so mermaid ELK layouts are unavailable (`docs/known-deviations.md`).
+- **Done when:** the first real release (0.1.0) is published from GitHub and a later one updates an installed copy; checklist `docs/checklists/phase-6-updates.md`.
 
 ### Phase 7 — Later features (designed for, not built now)
 

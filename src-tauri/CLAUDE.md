@@ -14,6 +14,7 @@ is not OS integration belongs in the TypeScript frontend.
 | `settings.rs` | Versioned JSON settings in the app-config dir; migrations                                                   |
 | `cli.rs`      | Launch arguments and macOS `RunEvent::Opened`; resolves to an absolute path                                 |
 | `paths.rs`    | Resolves markdown hrefs (relative, absolute, `file://`) to existing files next to the open document         |
+| `updater.rs`  | Self-update (ADR 0010): check, download + install + restart, other-instance guard on Windows                |
 
 ## Rules
 
@@ -50,7 +51,17 @@ is not OS integration belongs in the TypeScript frontend.
   (`tools/linux/`); do it before committing changes to paths, the watcher
   or the menu. macOS builds come from CI only (ADR 0009).
 - Settings and the recent list live outside the install directory (Tauri
-  `app_config_dir`) so updates never touch them.
+  `app_config_dir`) so updates never touch them. New settings fields carry
+  `#[serde(default)]` so older files load without a schema bump. An
+  unreadable `settings.json` is renamed to `settings.invalid.json` at
+  startup (`settings::load_or_recover`) before defaults could overwrite it;
+  a UTF-8 BOM is accepted.
+- The updater plugin is used from Rust only (`updater.rs`); never grant the
+  frontend `updater:*` or `process:*` permissions. On Windows the NSIS
+  installer force-closes every process of the installed exe, so
+  `updater::install` must keep refusing while other GCMD processes run.
+- Dependencies must be GPLv3-compatible (ADR 0011): check the license of a
+  new crate and of what it pulls in.
 
 ## Testing
 
@@ -68,3 +79,9 @@ is not OS integration belongs in the TypeScript frontend.
 - `tauri.conf.json` owns file associations (`md`, `markdown`), window
   defaults, CSP, and bundle metadata. The app identifier is
   `ch.gaetancretton.gcmd` and must not change (it keys settings and updates).
+- `version` in `tauri.conf.json` is `"../package.json"`; set versions only
+  with `npm run release:version -- X.Y.Z` (docs/release.md).
+- `tauri.release.conf.json` turns on `createUpdaterArtifacts`, which needs
+  `TAURI_SIGNING_PRIVATE_KEY`; plain `tauri build` does not use it. The
+  updater `pubkey` and endpoint in `tauri.conf.json` are release-critical:
+  changing the key strands installed copies.

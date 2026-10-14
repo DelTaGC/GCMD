@@ -30,6 +30,28 @@ pub enum Theme {
     System,
 }
 
+/// When to look for updates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdateCheck {
+    /// In the background after startup, at most once a day.
+    #[default]
+    Auto,
+    /// Only from Help > Check for Updates.
+    Manual,
+}
+
+/// Update preferences and bookkeeping (ADR 0010).
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct UpdateSettings {
+    pub check: UpdateCheck,
+    /// Time of the last completed check, in Unix milliseconds.
+    pub last_check_ms: Option<u64>,
+    /// A version the user chose to skip; automatic checks stay quiet about it.
+    pub skipped_version: Option<String>,
+}
+
 /// Persisted user settings.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -42,6 +64,9 @@ pub struct Settings {
     pub recent_files: Vec<String>,
     /// Whether the outline sidebar is shown.
     pub sidebar_visible: bool,
+    /// Update preferences. Added without a schema bump: older files simply
+    /// lack the key and get the defaults.
+    pub updates: UpdateSettings,
     /// Keys from newer or unknown versions, preserved verbatim so an update never drops a user's data.
     #[serde(flatten)]
     pub extra: serde_json::Map<String, serde_json::Value>,
@@ -54,6 +79,7 @@ impl Default for Settings {
             theme: Theme::System,
             recent_files: Vec::new(),
             sidebar_visible: false,
+            updates: UpdateSettings::default(),
             extra: serde_json::Map::new(),
         }
     }
@@ -104,6 +130,8 @@ fn migrate(mut settings: Settings) -> Settings {
 ///
 /// Missing fields take their defaults and unknown keys are preserved.
 pub fn parse(json: &str) -> Result<Settings, AppError> {
+    // Editors such as Windows PowerShell 5.1 write UTF-8 with a BOM.
+    let json = json.strip_prefix('\u{feff}').unwrap_or(json);
     let settings: Settings = serde_json::from_str(json)
         .map_err(|e| AppError::Settings(format!("Invalid settings file: {e}")))?;
     Ok(migrate(settings))
@@ -115,6 +143,23 @@ pub fn load(path: &Path) -> Result<Settings, AppError> {
         Ok(json) => parse(&json),
         Err(e) if e.kind() == ErrorKind::NotFound => Ok(Settings::default()),
         Err(e) => Err(AppError::Settings(format!("Cannot read settings: {e}"))),
+    }
+}
+
+/// Loads settings for startup. An unreadable file is renamed to
+/// `settings.invalid.json` next to it (replacing an older one) before the
+/// defaults are used, so the next save cannot overwrite the user's data.
+pub fn load_or_recover(path: &Path) -> Settings {
+    match load(path) {
+        Ok(settings) => settings,
+        Err(e) => {
+            let backup = path.with_file_name("settings.invalid.json");
+            match fs::rename(path, &backup) {
+                Ok(()) => eprintln!("{e}; kept as {}, using defaults", backup.display()),
+                Err(re) => eprintln!("{e}; backup failed ({re}), using defaults"),
+            }
+            Settings::default()
+        }
     }
 }
 
@@ -142,6 +187,26 @@ mod tests {
         assert_eq!(value["theme"], "system");
         assert_eq!(value["recentFiles"], serde_json::json!([]));
         assert_eq!(value["sidebarVisible"], false);
+        assert_eq!(
+            value["updates"],
+            serde_json::json!({"check": "auto", "lastCheckMs": null, "skippedVersion": null})
+        );
+    }
+
+    #[test]
+    fn parse_v1_file_without_updates_gets_defaults() {
+        let s = parse(r#"{"schemaVersion":1,"theme":"dark","recentFiles":["/a.md"]}"#).unwrap();
+        assert_eq!(s.updates, UpdateSettings::default());
+        assert_eq!(s.recent_files, ["/a.md"]);
+    }
+
+    #[test]
+    fn parse_reads_update_settings() {
+        let json = r#"{"updates":{"check":"manual","lastCheckMs":5,"skippedVersion":"0.3.0"}}"#;
+        let s = parse(json).unwrap();
+        assert_eq!(s.updates.check, UpdateCheck::Manual);
+        assert_eq!(s.updates.last_check_ms, Some(5));
+        assert_eq!(s.updates.skipped_version.as_deref(), Some("0.3.0"));
     }
 
     #[test]
@@ -244,6 +309,32 @@ mod tests {
         save(&path, &s).unwrap();
         assert!(fs::read_to_string(&path).unwrap().ends_with("}\n"));
         assert_eq!(load(&path).unwrap(), s);
+    }
+
+    #[test]
+    fn parse_accepts_a_byte_order_mark() {
+        let s = parse("\u{feff}{\"theme\":\"dark\"}").unwrap();
+        assert_eq!(s.theme, Theme::Dark);
+    }
+
+    #[test]
+    fn load_or_recover_sets_an_unreadable_file_aside() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        fs::write(&path, "{broken").unwrap();
+        assert_eq!(load_or_recover(&path), Settings::default());
+        assert!(!path.exists());
+        let backup = dir.path().join("settings.invalid.json");
+        assert_eq!(fs::read_to_string(backup).unwrap(), "{broken");
+    }
+
+    #[test]
+    fn load_or_recover_reads_a_valid_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        fs::write(&path, r#"{"theme":"light"}"#).unwrap();
+        assert_eq!(load_or_recover(&path).theme, Theme::Light);
+        assert!(path.exists());
     }
 
     #[test]
