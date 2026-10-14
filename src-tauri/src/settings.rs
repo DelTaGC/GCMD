@@ -52,6 +52,41 @@ pub struct UpdateSettings {
     pub skipped_version: Option<String>,
 }
 
+/// How long lines wrap.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WrapMode {
+    /// No wrapping; long lines scroll horizontally.
+    Off,
+    /// Wrap at the window width minus the margins.
+    #[default]
+    Full,
+    /// Wrap at a fixed text width, centered.
+    Fixed,
+}
+
+/// Line wrap preferences. Sizes are CSS pixels; the frontend clamps them to
+/// the window when it lays out the text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct WrapSettings {
+    pub mode: WrapMode,
+    /// Text width in [`WrapMode::Fixed`].
+    pub width: u32,
+    /// Margin on each side in [`WrapMode::Full`] and [`WrapMode::Off`].
+    pub margin: u32,
+}
+
+impl Default for WrapSettings {
+    fn default() -> Self {
+        Self {
+            mode: WrapMode::Full,
+            width: 832,
+            margin: 40,
+        }
+    }
+}
+
 /// Persisted user settings.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -67,6 +102,8 @@ pub struct Settings {
     /// Update preferences. Added without a schema bump: older files simply
     /// lack the key and get the defaults.
     pub updates: UpdateSettings,
+    /// Line wrap preferences (added without a schema bump, like `updates`).
+    pub wrap: WrapSettings,
     /// Keys from newer or unknown versions, preserved verbatim so an update never drops a user's data.
     #[serde(flatten)]
     pub extra: serde_json::Map<String, serde_json::Value>,
@@ -80,6 +117,7 @@ impl Default for Settings {
             recent_files: Vec::new(),
             sidebar_visible: false,
             updates: UpdateSettings::default(),
+            wrap: WrapSettings::default(),
             extra: serde_json::Map::new(),
         }
     }
@@ -191,6 +229,19 @@ mod tests {
             value["updates"],
             serde_json::json!({"check": "auto", "lastCheckMs": null, "skippedVersion": null})
         );
+        assert_eq!(
+            value["wrap"],
+            serde_json::json!({"mode": "full", "width": 832, "margin": 40})
+        );
+    }
+
+    #[test]
+    fn parse_reads_wrap_settings_and_fills_missing_fields() {
+        let s = parse(r#"{"wrap":{"mode":"fixed","width":1200}}"#).unwrap();
+        assert_eq!(s.wrap.mode, WrapMode::Fixed);
+        assert_eq!(s.wrap.width, 1200);
+        assert_eq!(s.wrap.margin, WrapSettings::default().margin);
+        assert_eq!(parse("{}").unwrap().wrap, WrapSettings::default());
     }
 
     #[test]

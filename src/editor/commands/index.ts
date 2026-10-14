@@ -32,6 +32,12 @@ import {
   toggleStrong,
 } from "./format";
 import { setHeadingLevel } from "./headings";
+import {
+  indentListItem,
+  outdentListItem,
+  outdentListItemBackward,
+  withRenumber,
+} from "./listItems";
 import { toggleTask } from "./lists";
 import { defineCommand, type CommandDef, type CommandRunner } from "./registry";
 import { alignTable, nextCell, prevCell } from "./table";
@@ -82,13 +88,13 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "line.outdent", title: "Outdent", run: indentLess }),
   defineCommand({
     id: "edit.tab",
-    title: "Next table cell, or indent",
-    run: chain(nextCell, indentMore),
+    title: "Next table cell, nest list item, or indent",
+    run: chain(nextCell, withRenumber(indentListItem), indentMore),
   }),
   defineCommand({
     id: "edit.shiftTab",
-    title: "Previous table cell, or outdent",
-    run: chain(prevCell, indentLess),
+    title: "Previous table cell, unnest list item, or outdent",
+    run: chain(prevCell, withRenumber(outdentListItem), indentLess),
   }),
   defineCommand({ id: "table.nextCell", title: "Next table cell", run: nextCell }),
   defineCommand({ id: "table.prevCell", title: "Previous table cell", run: prevCell }),
@@ -109,12 +115,12 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({
     id: "line.continueMarkup",
     title: "New line (continue list or quote)",
-    run: insertNewlineContinueMarkup,
+    run: withRenumber(insertNewlineContinueMarkup),
   }),
   defineCommand({
     id: "line.deleteMarkupBackward",
-    title: "Backspace (remove list or quote marker)",
-    run: deleteMarkupBackward,
+    title: "Backspace (unnest list item, remove list or quote marker)",
+    run: chain(withRenumber(outdentListItemBackward), withRenumber(deleteMarkupBackward)),
   }),
   defineCommand({ id: "edit.undo", title: "Undo", run: undo }),
   defineCommand({ id: "edit.redo", title: "Redo", run: redo }),

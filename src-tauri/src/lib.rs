@@ -21,7 +21,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 
 use crate::document::{Document, DocumentMeta};
 use crate::error::AppError;
-use crate::settings::{Settings, Theme, UpdateCheck};
+use crate::settings::{Settings, Theme, UpdateCheck, WrapSettings};
 use crate::updater::{PendingUpdate, UpdateInfo};
 use crate::watcher::DocumentWatcher;
 
@@ -203,6 +203,15 @@ fn set_sidebar_visible<R: Runtime>(
     visible: bool,
 ) -> Result<Settings, AppError> {
     state.update(&app, |s| s.sidebar_visible = visible)
+}
+
+#[tauri::command]
+fn set_wrap<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    wrap: WrapSettings,
+) -> Result<Settings, AppError> {
+    state.update(&app, |s| s.wrap = wrap)
 }
 
 #[tauri::command]
@@ -409,6 +418,7 @@ pub fn run() {
             get_settings,
             set_theme,
             set_sidebar_visible,
+            set_wrap,
             add_recent_file,
             remove_recent_file,
             clear_recent_files,

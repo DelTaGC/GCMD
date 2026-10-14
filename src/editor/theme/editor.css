@@ -21,10 +21,10 @@
   overflow: auto;
 }
 
+/* The side padding is the wrap margin, set by editor/wrap.ts from the wrap
+   mode and the window width (app/wrapLayout.ts). */
 .cm-editor .cm-content {
-  max-width: var(--editor-max-width);
-  margin: 0 auto;
-  padding: 2rem 2.5rem 50vh;
+  padding: 2rem var(--wrap-margin, 2.5rem) 50vh;
   caret-color: var(--fg);
 }
 

@@ -37,7 +37,8 @@
   --font-editor: var(--font-ui);
   --font-mono: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
   --editor-font-size: 16px;
-  --editor-max-width: 52rem;
+  --wrapbar-margin: #eaeef2;
+  --wrapbar-text: #b6bec7;
 }
 
 :root[data-theme="dark"] {
@@ -70,6 +71,8 @@
   --tok-tag: #7ee787;
   --tok-meta: #8b949e;
   --tok-invalid: #ff7b72;
+  --wrapbar-margin: #1c2128;
+  --wrapbar-text: #444c56;
 }
 
 html,
@@ -86,7 +89,7 @@ body {
 #app {
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   height: 100%;
 }
 
@@ -152,8 +155,30 @@ body {
   overflow: hidden;
 }
 
+/* Wrap bar under the editor (chrome/wrapBar.ts): margins light, text column darker. */
+.wrap-bar {
+  grid-row: 3;
+  grid-column: 1;
+  position: relative;
+  height: 8px;
+  background: var(--wrapbar-margin);
+  touch-action: none;
+}
+.wrap-bar:not([data-mode="off"]) {
+  cursor: ew-resize;
+}
+.wrap-bar-text {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--wrapbar-text);
+}
+.wrap-bar[data-mode="off"] .wrap-bar-text {
+  display: none;
+}
+
 .sidebar {
-  grid-row: 2;
+  grid-row: 2 / 4;
   width: 260px;
   border-left: 1px solid var(--border);
   background: var(--panel-bg);

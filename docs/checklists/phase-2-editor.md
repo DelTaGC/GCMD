@@ -46,7 +46,7 @@ and again after switching the theme (View > Theme).
 - [ ] Ctrl+1..6 set the heading level; Ctrl+0 removes it.
 - [ ] Ctrl+D duplicates the line; Alt+Up/Down move it; Shift+Alt+Up/Down copy it; Ctrl+Shift+K deletes it.
 - [ ] Enter continues lists, task lists and quotes; Backspace on an empty item removes the marker.
-- [ ] Tab / Shift+Tab indent and outdent list items.
+- [ ] Tab / Shift+Tab indent and outdent list items (nesting and numbering details: lists-and-wrap.md).
 - [ ] Ctrl+F opens find; Ctrl+H opens find with replace; F3 / Shift+F3 step through matches; Escape closes the panel.
 - [ ] Ctrl+Z / Ctrl+Y undo and redo; Edit > Undo / Redo do the same.
 - [ ] Alt+F / Alt+E / Alt+V / Alt+H open the matching menu while the editor has focus; arrows, letters and Escape then work inside it.

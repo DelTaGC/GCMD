@@ -13,12 +13,24 @@ export interface UpdateSettings {
   skippedVersion: string | null;
 }
 
+export type WrapMode = "off" | "full" | "fixed";
+
+/** Line wrap preferences; sizes in CSS pixels (`settings.rs` `WrapSettings`). */
+export interface WrapSettings {
+  mode: WrapMode;
+  /** Text width in fixed mode. */
+  width: number;
+  /** Margin on each side in full and off modes. */
+  margin: number;
+}
+
 export interface Settings {
   schemaVersion: number;
   theme: ThemePreference;
   recentFiles: string[];
   sidebarVisible: boolean;
   updates: UpdateSettings;
+  wrap: WrapSettings;
 }
 
 export function getSettings(): Promise<Settings> {
@@ -31,6 +43,10 @@ export function setTheme(theme: ThemePreference): Promise<Settings> {
 
 export function setSidebarVisible(visible: boolean): Promise<Settings> {
   return invoke<Settings>("set_sidebar_visible", { visible });
+}
+
+export function setWrap(wrap: WrapSettings): Promise<Settings> {
+  return invoke<Settings>("set_wrap", { wrap });
 }
 
 export function addRecentFile(path: string): Promise<Settings> {

@@ -33,6 +33,20 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   install after the session's unsaved-changes prompt. The rules (when to
   check, skipped versions, texts) are pure functions in
   `app/updatePolicy.ts`.
+- `editor/commands/listItems.ts` moves list items between nesting levels
+  (Tab, Shift-Tab, Backspace right after a nested item's marker) using the
+  Lezer tree, and `withRenumber(command)` wraps a list command (including
+  the markdown Enter and Backspace) so the ordered lists it touched are
+  renumbered in the same transaction. A list's first item keeps its number
+  unless it was not a list head before the edit (then 1); lazy `1. 1. 1.`
+  lists stay lazy. Items inside blockquotes fall back to plain indent.
+- Line wrap: `app/wrap.ts` owns the wrap settings (`off`, `full`, `fixed`),
+  computes the text column with the pure rules in `app/wrapLayout.ts`,
+  applies it through `editor/wrap.ts` (a `lineWrapping` compartment plus
+  the `--wrap-margin` CSS variable used as the content padding) and draws
+  `chrome/wrapBar.ts`, the strip under the editor that is dragged and
+  double-clicked. It registers `view.wrap.*` for View > Line Wrap.
+  `replaceDocument` carries the wrap flag into the new state.
 - `editor/quickbar.ts` is the selection toolbar: a `showTooltip` state field
   (visible when the main selection is non-empty, no drag in progress, not
   dismissed) whose buttons run registry commands. `edit.escape` dismisses

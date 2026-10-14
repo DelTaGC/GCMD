@@ -22,6 +22,7 @@ import { linkOpener } from "./links";
 import { livePreview } from "./livePreview";
 import { quickbar } from "./quickbar";
 import { editorTheme } from "./theme";
+import { isWrapping, wrapExtension } from "./wrap";
 
 export interface EditorOptions {
   parent: HTMLElement;
@@ -47,6 +48,7 @@ export function createEditorState(
   dark: boolean,
   extra: Extension[] = [],
   path: string | null = null,
+  wrap = true,
 ): EditorState {
   return EditorState.create({
     doc,
@@ -55,7 +57,7 @@ export function createEditorState(
       drawSelection(),
       dropCursor(),
       highlightSpecialChars(),
-      EditorView.lineWrapping,
+      wrapExtension(wrap),
       EditorState.allowMultipleSelections.of(false),
       indentUnit.of("  "),
       documentPathExtension(path),
@@ -97,6 +99,7 @@ export function replaceDocument(
       dark,
       listeners.map((listener) => EditorView.updateListener.of(listener)),
       path,
+      isWrapping(view.state),
     ),
   );
 }

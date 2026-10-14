@@ -6,6 +6,7 @@ import type { ViewUpdate } from "@codemirror/view";
 import { createOutlineController } from "./app/outline";
 import { createSession } from "./app/session";
 import { createUpdateController } from "./app/updates";
+import { createWrapController } from "./app/wrap";
 import { createBanner } from "./chrome/banner";
 import { installMenuMnemonics } from "./chrome/menuKeys";
 import { createSidebar } from "./chrome/sidebar";
@@ -14,7 +15,7 @@ import { runCommand } from "./editor/commands";
 import { createEditor, replaceDocument } from "./editor/create";
 import { launchArgs } from "./ipc/app";
 import { onFileChanged, onMenu, onOpenFile } from "./ipc/events";
-import { getSettings, type Settings } from "./ipc/settings";
+import { getSettings, setWrap, type Settings } from "./ipc/settings";
 import { isTauri } from "./ipc/env";
 import { onCloseRequested, onFilesDropped } from "./ipc/window";
 
@@ -34,6 +35,7 @@ const DEFAULT_SETTINGS: Settings = {
   recentFiles: [],
   sidebarVisible: false,
   updates: { check: "auto", lastCheckMs: null, skippedVersion: null },
+  wrap: { mode: "full", width: 832, margin: 40 },
 };
 
 async function loadSettings(): Promise<Settings> {
@@ -68,6 +70,12 @@ async function bootstrap(): Promise<void> {
     onUpdate: (update) => hooks.onUpdate?.(update),
   });
   const outline = createOutlineController(view, sidebar);
+  const wrap = createWrapController({
+    view,
+    initial: settings.wrap,
+    persist: (next) => (isTauri() ? setWrap(next) : Promise.resolve()),
+  });
+  host.after(wrap.bar.element);
   const current = createSession({
     view,
     banner,
@@ -75,6 +83,7 @@ async function bootstrap(): Promise<void> {
     theme,
     onLoad: () => {
       outline.refresh();
+      wrap.refresh();
     },
   });
   hooks.onUpdate = (update) => {
@@ -86,7 +95,7 @@ async function bootstrap(): Promise<void> {
     // Debug handle for the browser console and automated UI checks
     // (`replaceDocument` loads text without IPC, see docs/perf.md).
     Object.assign(window, {
-      gcmd: { view, session: current, outline, sidebar, banner, replaceDocument },
+      gcmd: { view, session: current, outline, sidebar, banner, wrap, replaceDocument },
     });
   }
   if (!isTauri()) {

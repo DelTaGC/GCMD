@@ -11,7 +11,7 @@ use tauri::menu::{
 };
 use tauri::{AppHandle, LogicalPosition, Runtime, Window};
 
-use crate::settings::{Settings, Theme, UpdateCheck};
+use crate::settings::{Settings, Theme, UpdateCheck, WrapMode};
 
 /// Prefix of recent-file item ids; the rest is the path.
 pub const RECENT_PREFIX: &str = "recent:";
@@ -264,6 +264,29 @@ fn theme_submenu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::
     )
 }
 
+fn wrap_submenu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Submenu<R>> {
+    let check = |id: &str, text: &str, mode: WrapMode| {
+        CheckMenuItem::with_id(
+            app,
+            id,
+            text,
+            true,
+            settings.wrap.mode == mode,
+            None::<&str>,
+        )
+    };
+    Submenu::with_items(
+        app,
+        "Line &Wrap",
+        true,
+        &[
+            &check("view.wrap.off", "&Off", WrapMode::Off)?,
+            &check("view.wrap.full", "&Full Width", WrapMode::Full)?,
+            &check("view.wrap.fixed", "Fi&xed Width", WrapMode::Fixed)?,
+        ],
+    )
+}
+
 fn view_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Submenu<R>> {
     let sidebar = CheckMenuItem::with_id(
         app,
@@ -278,7 +301,11 @@ fn view_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
         "menu.view",
         "&View",
         true,
-        &[&sidebar, &theme_submenu(app, settings)?],
+        &[
+            &sidebar,
+            &theme_submenu(app, settings)?,
+            &wrap_submenu(app, settings)?,
+        ],
     )
 }
 
