@@ -1,6 +1,7 @@
 # 0011: GPL-3.0-or-later
 
-Date: 2026-10-14. Status: Accepted.
+Date: 2026-10-14. Status: Accepted; amended by ADR 0012 (additional
+permission for elkjs, which is shipped again).
 
 ## Context
 
@@ -32,10 +33,10 @@ crates reachable on Windows, macOS and Linux) found:
 - GCMD is licensed **GPL-3.0-or-later**: `LICENSE` holds the GPLv3 text;
   `package.json`, `Cargo.toml` and `tauri.conf.json` (`bundle.license`, read
   by the Linux packages) say `GPL-3.0-or-later`.
-- `elkjs` is replaced at build time by `src/editor/mermaid/elkUnavailable.ts`
-  (Vite alias in `vite.config.ts`), so it is never shipped. A diagram that
-  asks for an ELK layout shows the mermaid error in its widget; the default
-  dagre layout is unaffected. Recorded in `docs/known-deviations.md`.
+- `elkjs` is replaced at build time by a stub, so it is never shipped. A
+  diagram that asks for an ELK layout shows an error in its widget; the
+  default dagre layout is unaffected. (Superseded by ADR 0012: GCMD's
+  license grants an additional permission for elkjs, which ships again.)
 - `dompurify` (`MPL-2.0 OR Apache-2.0`) is used under Apache-2.0.
 
 ## Consequences
@@ -59,7 +60,8 @@ crates reachable on Windows, macOS and Linux) found:
   BSD-2/3-Clause, Zlib, 0BSD, CC0-1.0, Unlicense, Unicode-3.0, Apache-2.0
   with or without LLVM-exception, MPL-2.0; an OR needs one allowed option).
   `npm run check` fails when the committed file is out of date, and the
-  release workflow regenerates it and fails if elkjs code is in `dist/`.
+  release workflow regenerates it. (ADR 0012 adds a per-package exception
+  for elkjs and drops the scan of `dist/` for elkjs code.)
   A package whose metadata has no license field gets a reviewed entry in
   `LICENSE_OVERRIDES` (per version).
 - The AppImage bundles LGPL system libraries (GTK, WebKitGTK); their source

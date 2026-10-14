@@ -60,5 +60,12 @@ version. It is distributed in the hope that it will be useful, but WITHOUT
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See [LICENSE](LICENSE) for the full text.
 
+As an additional permission under GPLv3 section 7, GCMD may be combined with
+elkjs (EPL-2.0), the layout engine of mermaid's ELK layouts; see
+[LICENSE-EXCEPTION](LICENSE-EXCEPTION) and
+[ADR 0012](docs/decisions/0012-elkjs-exception.md).
+
 Third-party components keep their own licenses (MIT, Apache-2.0, ISC, BSD,
-MPL-2.0 and others; see [ADR 0011](docs/decisions/0011-license.md)).
+MPL-2.0, EPL-2.0 for elkjs, and others; see
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and
+[ADR 0011](docs/decisions/0011-license.md)).

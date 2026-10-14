@@ -24,4 +24,4 @@ and Linux on the CI builds.
 
 ## Licenses
 
-- [ ] Help > About (macOS: GCMD menu) names GPL-3.0-or-later and the full path of `THIRD-PARTY-NOTICES.md`; that file and `LICENSE.txt` exist there in the installed copy (Windows: install folder, macOS: `GCMD.app/Contents/Resources`, Linux: `/usr/lib/GCMD`), and the notices open in GCMD with the license texts shown as code blocks.
+- [ ] Help > About (macOS: GCMD menu) names `GPL-3.0-or-later WITH AdditionRef-GCMD-elkjs-exception` and the full path of `THIRD-PARTY-NOTICES.md`; that file, `LICENSE.txt` and `LICENSE-EXCEPTION.txt` exist there in the installed copy (Windows: install folder, macOS: `GCMD.app/Contents/Resources`, Linux: `/usr/lib/GCMD`), and the notices open in GCMD with the license texts shown as code blocks.

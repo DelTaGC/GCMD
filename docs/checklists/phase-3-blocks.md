@@ -19,6 +19,7 @@ must still pass.
 ## Mermaid
 
 - [ ] The first mermaid fence shows "Rendering diagram…" briefly, then the flowchart; the sequence diagram renders too. No layout jump once rendered (scroll position unchanged).
+- [ ] The third diagram (`layout: elk`) renders with the ELK layout: the `Session` subgraph left to right, no error box (elkjs, ADR 0012).
 - [ ] Switching theme re-renders diagrams with matching dark/light colors.
 - [ ] Clicking a diagram puts the cursor on the first source line and shows the fence with ```mermaid highlighted; clicking elsewhere renders the diagram again instantly (cached).
 - [ ] Breaking the source (type `xx` on the `graph TD` line, click away) shows the inline error box with mermaid's message; fixing it renders again.

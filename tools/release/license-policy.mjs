@@ -19,6 +19,26 @@ export const ALLOWED = new Set([
 ]);
 
 /**
+ * Licenses allowed for one package only, because GCMD's license grants an
+ * additional permission to combine with it (`LICENSE-EXCEPTION`, ADR 0012).
+ * Keyed by `ecosystem:name`. `source` (with `{version}`) is where the
+ * package's source code is, which its license requires recipients be told.
+ */
+export const PACKAGE_EXCEPTIONS = {
+  "npm:elkjs": {
+    license: "EPL-2.0",
+    source:
+      "https://github.com/kieler/elkjs/tree/{version}, compiled from the Eclipse Layout Kernel, https://github.com/eclipse-elk/elk",
+  },
+};
+
+/** The allow-list for one package: ALLOWED plus its PACKAGE_EXCEPTIONS license. */
+export function allowedFor(ecosystem, name, exceptions = PACKAGE_EXCEPTIONS) {
+  const exception = exceptions[`${ecosystem}:${name}`];
+  return exception === undefined ? ALLOWED : new Set([...ALLOWED, exception.license]);
+}
+
+/**
  * Parses an SPDX license expression into a tree of
  * `{ type: "license", id, exception }` and `{ type: "and" | "or", items }`.
  * Accepts the legacy `A/B` form of old Cargo manifests as `A OR B`, and

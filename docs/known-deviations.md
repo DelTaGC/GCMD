@@ -46,11 +46,3 @@ the renderer resolves the label's backslash escapes itself.
    and note the new count above.
 3. A fix for an entry marked "candidate" is a Lezer block or inline parser
    extension in `src/editor/`, registered in `markdownExtension()`.
-
-## Beyond the spec: Mermaid
-
-Mermaid's ELK layouts (`layout: elk` in the diagram config, `flowchart-elk`)
-are not available: their engine `elkjs` is EPL-2.0, which GCMD
-(GPL-3.0-or-later) cannot ship (ADR 0011). Such a diagram shows "The ELK
-layout is not available in GCMD" in its widget; remove the `layout` setting
-to get the default dagre layout. All other diagram types and layouts work.

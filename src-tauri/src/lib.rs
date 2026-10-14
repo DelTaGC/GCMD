@@ -49,7 +49,7 @@ impl AppInfo {
         Self {
             name: "GCMD",
             version,
-            license: "GPL-3.0-or-later",
+            license: "GPL-3.0-or-later WITH AdditionRef-GCMD-elkjs-exception",
             notices,
         }
     }
@@ -459,7 +459,7 @@ mod tests {
         let json = serde_json::to_string(&AppInfo::new("1.2.3".into(), None)).unwrap();
         assert_eq!(
             json,
-            r#"{"name":"GCMD","version":"1.2.3","license":"GPL-3.0-or-later","notices":null}"#
+            r#"{"name":"GCMD","version":"1.2.3","license":"GPL-3.0-or-later WITH AdditionRef-GCMD-elkjs-exception","notices":null}"#
         );
     }
 }

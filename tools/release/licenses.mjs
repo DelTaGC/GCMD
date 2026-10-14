@@ -3,33 +3,27 @@
 // executable (`bundle.resources`) and named in Help > About.
 //   node tools/release/licenses.mjs               write the file
 //   node tools/release/licenses.mjs --check       fail if it is out of date (part of npm run check)
-//   node tools/release/licenses.mjs --dist dist   also fail if elkjs code is in the built frontend
 // Packages: the npm runtime closure (`npm ls --omit=dev`) and the Rust crates
 // reachable from `gcmd` through normal dependencies on Windows, macOS and
 // Linux (`cargo metadata --filter-platform`). Fails when a package has no
-// license or one outside the allow-list in license-policy.mjs.
+// license or one outside the allow-list in license-policy.mjs (or its
+// PACKAGE_EXCEPTIONS entry, for packages under GCMD's additional permission).
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  allowedFor,
   chosenLicenses,
   filesForLicenses,
   licenseProblem,
+  PACKAGE_EXCEPTIONS,
   parseExpression,
 } from "./license-policy.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..", "..");
 const OUT = "THIRD-PARTY-NOTICES.md";
-
-// Packages in the npm closure that are not shipped, with the reason.
-const EXCLUDED_NPM = {
-  elkjs: "not GPL-compatible; replaced by a stub through a Vite alias (ADR 0011)",
-};
-// Strings only elkjs code contains (they survive minification). Mermaid's
-// own ELK adapter, which stays, names the algorithms but has neither.
-const ELK_MARKERS = ["org.eclipse.elk", "Cannot construct an ELK without"];
 
 // Licenses for packages whose metadata has no usable license field, set after
 // reading their license file. Keyed by version so an update is re-checked.
@@ -68,8 +62,6 @@ const NOT_A_TEXT = /\.(?:[cm]?js|ts|json|rs|html?)$/i;
 
 const args = process.argv.slice(2);
 const checkOnly = args.includes("--check");
-const distIndex = args.indexOf("--dist");
-const distDir = distIndex === -1 ? null : args[distIndex + 1];
 
 const problems = [];
 
@@ -91,19 +83,9 @@ function npmPackages() {
     throw new Error(`npm ls failed: ${result.stderr}`);
   }
   const packages = new Map();
-  const excluded = new Map();
   const walk = (node) => {
     for (const [name, dep] of Object.entries(node.dependencies ?? {})) {
       const id = `${name}@${dep.version}`;
-      if (name in EXCLUDED_NPM) {
-        excluded.set(id, {
-          name,
-          version: dep.version,
-          license: dep.license,
-          why: EXCLUDED_NPM[name],
-        });
-        continue;
-      }
       if (dep.missing || dep.version === undefined) {
         problems.push(`npm ${name}: not installed (run npm ci)`);
         continue;
@@ -127,7 +109,7 @@ function npmPackages() {
     }
   };
   walk(JSON.parse(result.stdout));
-  return { packages: [...packages.values()], excluded: [...excluded.values()] };
+  return [...packages.values()];
 }
 
 function npmLicense(pkg) {
@@ -258,27 +240,6 @@ function label(pkg) {
   return `${pkg.ecosystem === "npm" ? "npm" : "crate"} ${pkg.name} ${pkg.version}`;
 }
 
-function scanDist(dir) {
-  const full = join(root, dir);
-  if (!existsSync(full)) {
-    problems.push(`--dist ${dir}: no such directory (run npm run build first)`);
-    return;
-  }
-  const visit = (path) => {
-    for (const entry of readdirSync(path, { withFileTypes: true })) {
-      const child = join(path, entry.name);
-      if (entry.isDirectory()) visit(child);
-      else if (/\.(?:[cm]?js|html)$/.test(entry.name)) {
-        const text = readFileSync(child, "utf8");
-        if (ELK_MARKERS.some((m) => text.includes(m))) {
-          problems.push(`${relative(root, child)}: contains elkjs code (EPL-2.0, must not ship)`);
-        }
-      }
-    }
-  };
-  visit(full);
-}
-
 // Longer than any tilde run starting a line of the text.
 function fenceFor(text) {
   const longest = Math.max(0, ...[...text.matchAll(/^~+/gm)].map((m) => m[0].length));
@@ -287,7 +248,7 @@ function fenceFor(text) {
 
 const cell = (s) => String(s).replace(/\|/g, "\\|");
 
-function render(npm, crates, excluded) {
+function render(npm, crates) {
   const groups = new Map(); // whitespace-insensitive text -> { number, text, users }
   const notices = new Map(); // package -> text numbers
   for (const pkg of [...npm, ...crates]) {
@@ -310,10 +271,12 @@ function render(npm, crates, excluded) {
     "# Third-party notices",
     "",
     "GCMD is free software under the GNU General Public License, version 3 or",
-    "later: the `LICENSE` file of the source, `LICENSE.txt` next to this file",
-    "in an installed copy. It contains the third-party packages listed below,",
-    "each under its own license. Their copyright and license notices follow",
-    "the lists; identical texts are printed once.",
+    "later, with an additional permission for elkjs: the `LICENSE` and",
+    "`LICENSE-EXCEPTION` files of the source, `LICENSE.txt` and",
+    "`LICENSE-EXCEPTION.txt` next to this file in an installed copy. It",
+    "contains the third-party packages listed below, each under its own",
+    "license. Their copyright and license notices follow the lists;",
+    "identical texts are printed once.",
     "",
     "Generated by `tools/release/licenses.mjs` (`npm run licenses`) from",
     "`package-lock.json` and `src-tauri/Cargo.lock`. Do not edit by hand.",
@@ -338,10 +301,19 @@ function render(npm, crates, excluded) {
     ),
     "",
   ];
-  if (excluded.length > 0) {
-    lines.push("## Not shipped", "", "In the npm dependency tree but left out of GCMD:", "");
-    for (const p of excluded)
-      lines.push(`- ${p.name} ${p.version} (${p.license ?? "no license"}): ${p.why}.`);
+  const excepted = [...npm, ...crates].filter((p) => exceptionOf(p) !== undefined);
+  if (excepted.length > 0) {
+    lines.push(
+      "## Under the additional permission",
+      "",
+      "Not GPL-compatible by themselves; GCMD's license permits combining with",
+      "them (`LICENSE-EXCEPTION`). Their source code:",
+      "",
+    );
+    for (const p of excepted) {
+      const source = exceptionOf(p).source.replace("{version}", p.version);
+      lines.push(`- ${p.name} ${p.version} (${p.license}): ${source}.`);
+    }
     lines.push("");
   }
   lines.push("## License texts", "");
@@ -364,13 +336,16 @@ function render(npm, crates, excluded) {
 const byName = (a, b) =>
   a.name === b.name ? (a.version < b.version ? -1 : 1) : a.name < b.name ? -1 : 1;
 
-const { packages: npm, excluded } = npmPackages();
+const exceptionOf = (pkg) => PACKAGE_EXCEPTIONS[`${pkg.ecosystem}:${pkg.name}`];
+
+const npm = npmPackages();
 const crates = cratePackages();
 npm.sort(byName);
 crates.sort(byName);
 
 for (const pkg of [...npm, ...crates]) {
-  const problem = licenseProblem(pkg.license);
+  const allowed = allowedFor(pkg.ecosystem, pkg.name);
+  const problem = licenseProblem(pkg.license, allowed);
   if (problem !== null) {
     problems.push(`${label(pkg)}: ${problem}`);
     pkg.texts = [];
@@ -382,10 +357,9 @@ for (const pkg of [...npm, ...crates]) {
     continue;
   }
   const files = licenseFiles(pkg);
-  const chosen = chosenLicenses(parseExpression(pkg.license), PREFERENCE);
+  const chosen = chosenLicenses(parseExpression(pkg.license), PREFERENCE, allowed);
   pkg.texts = files.length > 0 ? filesForLicenses(files, chosen) : standardTexts(pkg, chosen);
 }
-if (distDir !== null) scanDist(distDir);
 
 if (problems.length > 0) {
   for (const p of problems) console.error(p);
@@ -395,7 +369,7 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
-const { markdown, texts } = render(npm, crates, excluded);
+const { markdown, texts } = render(npm, crates);
 const outPath = join(root, OUT);
 const summary = `${npm.length} npm packages, ${crates.length} crates, ${texts} license texts, ${Math.round(markdown.length / 1024)} KB`;
 if (checkOnly) {

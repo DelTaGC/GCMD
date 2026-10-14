@@ -77,12 +77,10 @@ jobs:
         run: npm run check
 
       # Regenerates the bundled THIRD-PARTY-NOTICES.md and fails on a license
-      # outside the allow-list or on elkjs code in the built frontend (ADR 0011).
+      # outside the allow-list (ADR 0011, ADR 0012).
       - name: Third-party license notices
         shell: bash
-        run: |
-          npm run build
-          npm run licenses -- --dist dist
+        run: npm run licenses
 
       - name: Read the release notes
         id: notes

@@ -15,4 +15,5 @@ before introducing a new technology or changing one of these.
 | [0008](0008-file-watcher.md)                     | `notify` watcher on the parent directory; the frontend reconciles |
 | [0009](0009-cross-platform-builds.md)            | Linux builds through Docker, all platforms through GitHub Actions |
 | [0010](0010-self-update.md)                      | Self-update with tauri-plugin-updater and GitHub Releases         |
-| [0011](0011-license.md)                          | GPL-3.0-or-later; elkjs left out of the build                     |
+| [0011](0011-license.md)                          | GPL-3.0-or-later; elkjs left out of the build (amended by 0012)   |
+| [0012](0012-elkjs-exception.md)                  | GPLv3 section 7 permission for elkjs; ELK layouts restored        |

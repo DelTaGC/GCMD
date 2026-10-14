@@ -45,6 +45,7 @@
     ],
     "resources": {
       "../LICENSE": "LICENSE.txt",
+      "../LICENSE-EXCEPTION": "LICENSE-EXCEPTION.txt",
       "../THIRD-PARTY-NOTICES.md": "THIRD-PARTY-NOTICES.md"
     },
     "fileAssociations": [
@@ -61,7 +62,7 @@
         "installMode": "currentUser"
       }
     },
-    "license": "GPL-3.0-or-later",
+    "license": "GPL-3.0-or-later WITH AdditionRef-GCMD-elkjs-exception",
     "copyright": "Copyright (C) 2026 Gaetan Cretton"
   },
   "plugins": {

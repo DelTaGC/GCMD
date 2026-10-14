@@ -238,7 +238,7 @@ Each phase ends with: tests green, lint clean, a manual verification checklist r
 - Windows: the passive NSIS installer force-closes every running GCMD (Restart Manager), so installing waits until no other GCMD window is open (matched by executable name; an exact-path match failed in the local test).
 - Releases: `vX.Y.Z` tag → `.github/workflows/release.yml` (tauri-action) → draft release with signed bundles and `latest.json`; notes from `CHANGELOG.md`; one version source checked by `npm run check` (`tools/release/`, `docs/release.md`).
 - Local end-to-end test on Windows (side-by-side test identity, throwaway key, local server): 0.1.0 → 0.1.1 updated with settings intact; a replayed older bundle under a newer version and a tampered bundle were both refused.
-- License GPL-3.0-or-later (ADR 0011); `elkjs` (EPL-2.0) replaced by a stub, so mermaid ELK layouts are unavailable (`docs/known-deviations.md`).
+- License GPL-3.0-or-later (ADR 0011) with a section 7 additional permission for `elkjs` (EPL-2.0), so mermaid ELK layouts work (ADR 0012, `LICENSE-EXCEPTION`).
 - **Done when:** the first real release (0.1.0) is published from GitHub and a later one updates an installed copy; checklist `docs/checklists/phase-6-updates.md`.
 
 ### Phase 7 — Later features (designed for, not built now)

@@ -1,7 +1,6 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 
 const rawHost = process.env["TAURI_DEV_HOST"];
 const host = rawHost !== undefined && rawHost.length > 0 ? rawHost : undefined;
@@ -22,18 +21,6 @@ export default defineConfig(() => ({
       // 3. tell Vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
-  },
-  resolve: {
-    alias: [
-      // elkjs (EPL-2.0) is not GPL-compatible and is left out (ADR 0011);
-      // mermaid's optional ELK layouts get a stub that reports an error.
-      {
-        find: /^elkjs\/lib\/elk\.bundled\.js$/,
-        replacement: fileURLToPath(
-          new URL("./src/editor/mermaid/elkUnavailable.ts", import.meta.url),
-        ),
-      },
-    ],
   },
   build: {
     // Modern webviews only (WebView2, WKWebView, WebKitGTK); no legacy transforms.

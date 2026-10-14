@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  allowedFor,
   chosenLicenses,
   fileNameLicense,
   filesForLicenses,
@@ -99,6 +100,19 @@ describe("licenseProblem", () => {
 
   it("uses the allow-list it is given", () => {
     expect(licenseProblem("MIT", new Set(["ISC"]))).toMatch(/not allowed/);
+  });
+});
+
+describe("allowedFor", () => {
+  it("allows EPL-2.0 for elkjs only", () => {
+    expect(licenseProblem("EPL-2.0", allowedFor("npm", "elkjs"))).toBeNull();
+    expect(licenseProblem("EPL-2.0", allowedFor("npm", "other"))).toMatch(/not allowed/);
+    expect(licenseProblem("EPL-2.0", allowedFor("cargo", "elkjs"))).toMatch(/not allowed/);
+  });
+
+  it("keeps the common allow-list for an excepted package", () => {
+    expect(licenseProblem("MIT", allowedFor("npm", "elkjs"))).toBeNull();
+    expect(licenseProblem("GPL-2.0-only", allowedFor("npm", "elkjs"))).toMatch(/not allowed/);
   });
 });
 

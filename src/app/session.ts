@@ -279,7 +279,7 @@ export function createSession(deps: SessionDeps): Session {
             `${info.name} ${info.version}`,
             "A single-document GitHub Flavored Markdown editor.",
             "",
-            `Free software under the GNU General Public License, version 3 or later (${info.license}), without any warranty.`,
+            `Free software under the GNU General Public License, version 3 or later, with an additional permission for elkjs (${info.license}), without any warranty.`,
             "",
             "Third-party licenses:",
             info.notices ?? "THIRD-PARTY-NOTICES.md in the installation folder",

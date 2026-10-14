@@ -136,6 +136,19 @@ sequenceDiagram
   G-->>U: saved
 ```
 
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+  subgraph Session
+    O[Open] --> E[Edit] --> S[Save]
+  end
+  S --> W[Watcher]
+  W -->|external change| O
+```
+
 ## Thematic breaks
 
 ---

@@ -41,7 +41,8 @@ npm run licenses       # regenerate THIRD-PARTY-NOTICES.md after dependency chan
 
 Releases come from a `vX.Y.Z` tag through `.github/workflows/release.yml`
 (draft GitHub release, published by hand); steps in `docs/release.md`.
-License: GPL-3.0-or-later (ADR 0011); new dependencies must be compatible.
+License: GPL-3.0-or-later (ADR 0011) plus a section 7 permission for elkjs
+(`LICENSE-EXCEPTION`, ADR 0012); new dependencies must be GPLv3-compatible.
 
 Node 24 (see `.nvmrc`, `engines.node` >= 22.22.1). TypeScript stays on the
 newest major that `typescript-eslint` supports (check its `peerDependencies`

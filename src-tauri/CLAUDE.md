@@ -79,10 +79,11 @@ is not OS integration belongs in the TypeScript frontend.
 - `tauri.conf.json` owns file associations (`md`, `markdown`), window
   defaults, CSP, and bundle metadata. The app identifier is
   `ch.gaetancretton.gcmd` and must not change (it keys settings and updates).
-- `bundle.resources` ships `../LICENSE` (as `LICENSE.txt`) and
+- `bundle.resources` ships `../LICENSE` (as `LICENSE.txt`),
+  `../LICENSE-EXCEPTION` (as `LICENSE-EXCEPTION.txt`) and
   `../THIRD-PARTY-NOTICES.md` next to the executable; `app_info` reports the
   notices path for Help > About. `tauri-build` copies resources in every
-  cargo build, so both files must exist (the notices file is committed;
+  cargo build, so all three files must exist (the notices file is committed;
   regenerate it with `npm run licenses` after dependency changes).
 - `version` in `tauri.conf.json` is `"../package.json"`; set versions only
   with `npm run release:version -- X.Y.Z` (docs/release.md).
