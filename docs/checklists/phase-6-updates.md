@@ -21,3 +21,7 @@ and Linux on the CI builds.
 - [ ] After the update: theme, sidebar state, recent files and window size are unchanged; `.md` files still open in GCMD by double-click.
 - [ ] A manifest pointing at a bundle with a wrong signature (edit `latest.json`) is refused with an error; the installed version still runs.
 - [ ] Both themes: the banner and its buttons are readable.
+
+## Licenses
+
+- [ ] Help > About (macOS: GCMD menu) names GPL-3.0-or-later and the full path of `THIRD-PARTY-NOTICES.md`; that file and `LICENSE.txt` exist there in the installed copy (Windows: install folder, macOS: `GCMD.app/Contents/Resources`, Linux: `/usr/lib/GCMD`), and the notices open in GCMD with the license texts shown as code blocks.

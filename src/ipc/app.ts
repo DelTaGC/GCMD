@@ -6,6 +6,10 @@ import { invoke } from "@tauri-apps/api/core";
 export interface AppInfo {
   name: string;
   version: string;
+  /** SPDX expression of GCMD's own license. */
+  license: string;
+  /** Path of the bundled THIRD-PARTY-NOTICES.md, or null when it is missing. */
+  notices: string | null;
 }
 
 export function appInfo(): Promise<AppInfo> {

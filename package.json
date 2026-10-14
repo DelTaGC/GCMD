@@ -32,8 +32,9 @@
     "linux:build": "bash tools/linux/run.sh build",
     "release:version": "node tools/release/version.mjs",
     "release:manifest": "node tools/release/manifest.mjs",
+    "licenses": "node tools/release/licenses.mjs",
     "release:build": "tauri build --config src-tauri/tauri.release.conf.json",
-    "check": "node tools/release/version.mjs && npm run typecheck && npm run lint && npm test && npm run test:rust",
+    "check": "node tools/release/version.mjs && node tools/release/licenses.mjs --check && npm run typecheck && npm run lint && npm test && npm run test:rust",
     "prepare": "simple-git-hooks"
   },
   "dependencies": {

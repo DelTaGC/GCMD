@@ -275,7 +275,15 @@ export function createSession(deps: SessionDeps): Session {
         const info = await appInfo();
         await showInfo(
           "About GCMD",
-          `${info.name} ${info.version}\nA single-document GitHub Flavored Markdown editor.`,
+          [
+            `${info.name} ${info.version}`,
+            "A single-document GitHub Flavored Markdown editor.",
+            "",
+            `Free software under the GNU General Public License, version 3 or later (${info.license}), without any warranty.`,
+            "",
+            "Third-party licenses:",
+            info.notices ?? "THIRD-PARTY-NOTICES.md in the installation folder",
+          ].join("\n"),
         );
       }),
   });

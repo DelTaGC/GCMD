@@ -76,6 +76,14 @@ jobs:
       - name: Typecheck, lint, test (TypeScript and Rust)
         run: npm run check
 
+      # Regenerates the bundled THIRD-PARTY-NOTICES.md and fails on a license
+      # outside the allow-list or on elkjs code in the built frontend (ADR 0011).
+      - name: Third-party license notices
+        shell: bash
+        run: |
+          npm run build
+          npm run licenses -- --dist dist
+
       - name: Read the release notes
         id: notes
         shell: bash

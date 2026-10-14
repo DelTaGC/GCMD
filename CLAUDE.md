@@ -26,7 +26,7 @@ npm run test:rust      # cargo test; single: cargo test --manifest-path src-taur
 npm run typecheck      # tsc --noEmit
 npm run lint           # eslint + prettier --check + clippy -D warnings
 npm run format         # prettier --write + cargo fmt
-npm run check          # typecheck + lint + both test suites; run before every commit
+npm run check          # version + notices check, typecheck, lint, both test suites; run before every commit
 npm run spec:extract   # regenerate tests/fixtures/gfm/spec.json from spec.txt
 npm run fixtures:large # generate tests/fixtures/generated/large.md (1 MB); -- --mb 0.55 --out 20k-lines.md
 npm run bench          # DOM-free timings over the generated fixtures (docs/perf.md)
@@ -36,6 +36,7 @@ npm run linux:build    # .deb and AppImage -> src-tauri/target/linux-bundle/
 npm run release:version -- X.Y.Z   # set the version everywhere (no arg: check, part of npm run check)
 npm run release:build  # signed bundles + .sig (needs TAURI_SIGNING_PRIVATE_KEY)
 npm run release:manifest -- --base-url <url> --out-dir <dir>   # latest.json for local update tests
+npm run licenses       # regenerate THIRD-PARTY-NOTICES.md after dependency changes; fails on a non-GPL-compatible license
 ```
 
 Releases come from a `vX.Y.Z` tag through `.github/workflows/release.yml`

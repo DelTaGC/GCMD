@@ -42,8 +42,25 @@ crates reachable on Windows, macOS and Linux) found:
 
 - A new dependency must be GPLv3-compatible; check its license (and its
   runtime dependencies') before adding it.
-- The permissive licenses still require their copyright notices in binary
-  distributions; a generated third-party notices file is still to be added
-  to the bundles.
+- The permissive licenses require their copyright notices in binary
+  distributions. `tools/release/licenses.mjs` (`npm run licenses`)
+  generates `THIRD-PARTY-NOTICES.md` at the repository root from the npm
+  runtime closure and the Rust crates reachable on Windows, macOS and Linux:
+  every package with its license and its license, notice and copyright
+  files, identical texts printed once. For an OR it reproduces only the
+  option GCMD uses (MIT first; `dompurify` under Apache-2.0). Packages with
+  no license file get a standard text (`tools/release/license-texts/`) with
+  their authors. The file is committed (`tauri-build` needs it for every
+  cargo build) and shipped with `LICENSE` as bundle resources
+  (`LICENSE.txt`, `THIRD-PARTY-NOTICES.md` next to the executable);
+  Help > About names its path.
+- The same tool is the license gate: it fails on a package without a license
+  or outside the allow-list in `tools/release/license-policy.mjs` (MIT, ISC,
+  BSD-2/3-Clause, Zlib, 0BSD, CC0-1.0, Unlicense, Unicode-3.0, Apache-2.0
+  with or without LLVM-exception, MPL-2.0; an OR needs one allowed option).
+  `npm run check` fails when the committed file is out of date, and the
+  release workflow regenerates it and fails if elkjs code is in `dist/`.
+  A package whose metadata has no license field gets a reviewed entry in
+  `LICENSE_OVERRIDES` (per version).
 - The AppImage bundles LGPL system libraries (GTK, WebKitGTK); their source
   is available from the distribution they were taken from.

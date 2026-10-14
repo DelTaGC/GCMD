@@ -6,3 +6,4 @@ src-tauri/icons/
 tests/fixtures/
 package-lock.json
 icon/
+THIRD-PARTY-NOTICES.md
