@@ -24,7 +24,7 @@ the manifest). Any static HTTPS host would work with
 
 ## Decision
 
-- **Manifest:** `https://github.com/<owner>/<repo>/releases/latest/download/latest.json`
+- **Manifest:** `https://github.com/DelTaGC/GCMD/releases/latest/download/latest.json`
   (`plugins.updater.endpoints` in `tauri.conf.json`). It lists version, notes,
   date and, per platform (`windows-x86_64`, `darwin-aarch64`, `darwin-x86_64`,
   `linux-x86_64`, `linux-x86_64-deb`), a download URL and a signature.

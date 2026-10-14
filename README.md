@@ -17,7 +17,7 @@ releases. See [PLAN.md](PLAN.md) for the roadmap,
 
 ## Install
 
-Download the installer for your platform from the GitHub releases page
+Download the installer for your platform from the [GitHub releases page](https://github.com/DelTaGC/GCMD/releases)
 (Windows `-setup.exe`, macOS `.dmg`, Linux `.deb` or `.AppImage`). The builds
 are not code-signed yet: on Windows choose "More info > Run anyway" in
 SmartScreen, on macOS right-click the app > Open the first time. GCMD then

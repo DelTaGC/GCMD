@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "GCMD - a lightweight single-document GitHub Flavored Markdown editor"
 authors = ["Gaetan Cretton"]
 license = "GPL-3.0-or-later"
+repository = "https://github.com/DelTaGC/GCMD"
 edition = "2024"
 # Let chains (`if let .. && let ..`) need 1.88; the MSRV-aware resolver also
 # uses this to pick dependency versions, so keep it current.

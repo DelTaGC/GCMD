@@ -231,7 +231,7 @@ Each phase ends with: tests green, lint clean, a manual verification checklist r
 - Linux: Docker image and runner (`tools/linux/`, ADR 0009); `npm run check` passes on Linux. macOS: application menu, predefined Edit items for Cmd+Z/X/C/V/A, Quit through the unsaved prompt, no Alt+letter interception; built by `.github/workflows/build.yml` once the repository has a remote (no Mac on hand).
 - **Done when:** budgets met on Windows and the app runs on at least one other platform. The Linux `.deb` and AppImage build from `npm run linux:build`; running them on a Linux desktop is in the phase 5 checklist.
 
-### Phase 6 — Self-update and license — DONE 2026-10-14 (first release pending the repository and the signing key)
+### Phase 6 — Self-update and license — DONE 2026-10-14 (first release pending)
 
 - `tauri-plugin-updater` driven from Rust (`updater.rs`, five commands of our own, no plugin permission for the frontend); manifest `latest.json` on GitHub Releases; signatures from an updater key (separate from OS code signing) with `requireSignedVersion` (ADR 0010).
 - Frontend: background check 5 s after startup, at most once a day, never in dev builds; Help > Check for Updates and Check Automatically; banner with Install and Restart / Release Notes / Skip This Version; install goes through the unsaved-changes prompt. Settings gained `updates` (no schema bump).

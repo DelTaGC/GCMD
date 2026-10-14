@@ -20,7 +20,7 @@ this machine.
 
 2. **Repository.** Public GitHub repository; the owner/name must match
    `plugins.updater.endpoints` in `src-tauri/tauri.conf.json`
-   (`https://github.com/<owner>/<repo>/releases/latest/download/latest.json`).
+   (`https://github.com/DelTaGC/GCMD/releases/latest/download/latest.json`).
 3. **Secrets** (Settings > Secrets and variables > Actions):
    `TAURI_SIGNING_PRIVATE_KEY` = the content of the private key file,
    `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = its password.

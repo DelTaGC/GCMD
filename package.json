@@ -5,6 +5,7 @@
   "description": "GCMD - a lightweight single-document GitHub Flavored Markdown editor",
   "license": "GPL-3.0-or-later",
   "author": "Gaetan Cretton",
+  "repository": "github:DelTaGC/GCMD",
   "type": "module",
   "engines": {
     "node": ">=22.22.1"

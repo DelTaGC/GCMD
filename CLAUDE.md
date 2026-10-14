@@ -64,6 +64,10 @@ before bumping TypeScript). In Bash tool calls, `cargo` needs
   (`System.Drawing` `CopyFromScreen` plus `user32` `SetCursorPos` /
   `mouse_event`); `SendKeys` reaches the editor. Alt+F/E/V/H open the
   menus through `chrome/menuKeys.ts` (WebView2 swallows native mnemonics).
+- Git: remote `origin` is `git@github.com:DelTaGC/GCMD.git` (public). The
+  local `user.email` is the GitHub noreply address; GitHub rejects pushes
+  of commits that carry the private address (email privacy), so never
+  commit with another email.
 - Claude Code runs on the same PC I am using to work on other projects.
   So when you randomly open the app to run tests at the same time I am typing in another window it can
   insert text (document will show dirty) or steal focus. Take back focus and undo to start in a clear state.
