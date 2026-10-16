@@ -166,42 +166,49 @@ function buildBar(view: EditorView): TooltipView {
   };
 }
 
-/** Range of the table holding the main selection head, or null. */
-function tableRange(state: EditorState): { from: number; to: number } | null {
-  const model = tableAt(state, state.selection.main.head);
-  return model ? { from: model.from, to: model.to } : null;
+interface Anchor {
+  /** Start of the table holding the main selection head (its identity). */
+  readonly from: number;
+  /** End of the row holding the head: the bar hangs below that row. */
+  readonly row: number;
+}
+
+/** The table holding the main selection head and the cursor's row, or null. */
+function anchorAt(state: EditorState): Anchor | null {
+  const head = state.selection.main.head;
+  const model = tableAt(state, head);
+  return model ? { from: model.from, row: state.doc.lineAt(head).to } : null;
 }
 
 /**
- * The bar sits below the table (the quickbar sits above a selection, so the
- * two never overlap while a cell's content is selected after Tab or Enter).
+ * The bar hangs below the cursor's row and follows it from row to row, so
+ * it stays in view in a long table. The quickbar sits above a selection, so
+ * the two never overlap while a cell's content is selected after Tab or
+ * Enter.
  */
-function tooltipFor(
-  range: { from: number; to: number } | null,
-  dismissedAt: number | null,
-): Tooltip | null {
-  if (range === null || range.from === dismissedAt) {
+function tooltipFor(anchor: Anchor | null, dismissedAt: number | null): Tooltip | null {
+  if (anchor === null || anchor.from === dismissedAt) {
     return null;
   }
-  return { pos: range.to, above: false, strictSide: false, arrow: false, create: buildBar };
+  return { pos: anchor.row, above: false, strictSide: false, arrow: false, create: buildBar };
 }
 
 export const tableBarState = StateField.define<TableBarState>({
-  create: (state) => ({ dismissedAt: null, tooltip: tooltipFor(tableRange(state), null) }),
+  create: (state) => ({ dismissedAt: null, tooltip: tooltipFor(anchorAt(state), null) }),
   update(value, tr) {
     let dismissedAt = value.dismissedAt === null ? null : tr.changes.mapPos(value.dismissedAt, 1);
     const dismiss = tr.effects.some((effect) => effect.is(dismissTableBar));
     if (!dismiss && !tr.docChanged && !tr.selection) {
       return dismissedAt === value.dismissedAt ? value : { ...value, dismissedAt };
     }
-    const range = tableRange(tr.state);
-    const from = range?.from ?? null;
+    const anchor = anchorAt(tr.state);
+    const from = anchor?.from ?? null;
     if (dismiss) {
       dismissedAt = from;
     } else if (dismissedAt !== null && from !== dismissedAt) {
       dismissedAt = null;
     }
-    const tooltip = tooltipFor(range, dismissedAt);
+    const tooltip = tooltipFor(anchor, dismissedAt);
     if (dismissedAt === value.dismissedAt && tooltip?.pos === value.tooltip?.pos) {
       return value;
     }

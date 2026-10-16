@@ -2,7 +2,13 @@ import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorSelection, EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 import { markdownExtension } from "./create";
-import { alignCommandAt, dismissTableBar, tableBar, tableBarVisible } from "./tableBar";
+import {
+  alignCommandAt,
+  dismissTableBar,
+  tableBar,
+  tableBarState,
+  tableBarVisible,
+} from "./tableBar";
 
 const DOC = "before\n\n| a | b |\n|:--|--:|\n| 1 | 2 |\n\nafter";
 
@@ -25,6 +31,14 @@ describe("table bar", () => {
 
   it("stays while a cell's content is selected (Tab, Enter)", () => {
     expect(tableBarVisible(stateAt(10, 11))).toBe(true);
+  });
+
+  it("hangs below the cursor's row and follows it", () => {
+    const header = stateAt(10).field(tableBarState).tooltip;
+    const body = stateAt(30).field(tableBarState).tooltip;
+    expect(header?.pos).toBe(DOC.indexOf("\n", 10));
+    expect(body?.pos).toBe(DOC.indexOf("\n", 30));
+    expect(header?.above).toBe(false);
   });
 
   it("stays dismissed while the cursor stays in that table, then comes back", () => {
