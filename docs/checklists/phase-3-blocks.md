@@ -15,6 +15,13 @@ must still pass.
 - [ ] Shift+Alt+F inside a misaligned table aligns it; the cursor stays on the same character.
 - [ ] The table nested in a list or a quote (add one to try) renders and realigns with its indentation / `> ` prefix kept.
 - [ ] Ctrl+click on the link inside the rendered table opens it in the browser without entering the table.
+- [ ] Enter inside a cell selects the same column of the next row (header -> first body row) and never splits the row; Enter in the last row appends an empty row with the cursor in the same column. Shift+Enter still inserts a line break.
+- [ ] With the cursor in a table, a table bar appears below it (it stays while a cell is selected after Tab; the quickbar then shows above the selection without overlapping): row buttons (insert above/below, delete), column buttons (insert left/right, delete, move left/right), the alignment dropdown and Align. Escape hides it until the cursor leaves the table and comes back.
+- [ ] Insert row below (bar or Ctrl+Enter) adds an aligned empty row with the cursor in the same column; above the header it makes a new empty header and the old header becomes the first body row. Outside a table Ctrl+Enter still inserts a blank line below.
+- [ ] Insert column left/right adds an empty column in every row including the delimiter; delete column removes it (the last column cannot be deleted); Shift+Alt+Left/Right move the column with its alignment, the cursor following it.
+- [ ] Delete row on a body row removes it; on the header it promotes the first body row; on a header-only table it removes the table. Each structural command is one Ctrl+Z step and leaves the table aligned.
+- [ ] The alignment dropdown shows the current column's alignment and changing it rewrites the delimiter cell (`:--`, `:-:`, `--:`); the rendered widget follows once the cursor leaves.
+- [ ] Edit > Table lists the same commands with Ctrl+Enter, Ctrl+Shift+Enter, Shift+Alt+Left/Right and Shift+Alt+F.
 
 ## Mermaid
 

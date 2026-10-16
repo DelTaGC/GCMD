@@ -51,6 +51,13 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   (visible when the main selection is non-empty, no drag in progress, not
   dismissed) whose buttons run registry commands. `edit.escape` dismisses
   it before closing search or collapsing the selection.
+- `editor/tableBar.ts` is the table toolbar, built the same way (shared
+  `commandButton`): shown below the table holding the selection head (the
+  quickbar sits above a selection, so the two never overlap), dismissed by
+  Escape until the cursor leaves that table. Its buttons run the `table.*` structural
+  commands in `commands/table.ts`, which rebuild the table from a grid of
+  cell texts (`tableModel.ts` `gridOf` / `formatGrid`) and write it back
+  aligned in one transaction.
 - `editor/linkCompletion.ts` completes link destinations (ADR 0013): the
   only `autocompletion` source (HTML tag completion is overridden). It
   finds the destination from the line text, lists one folder at a time

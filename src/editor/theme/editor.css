@@ -517,3 +517,21 @@
 .cm-quickbar-clear {
   color: var(--fg-muted);
 }
+
+/* Table bar: row and column commands shown above the table at the cursor.
+   It shares the quickbar's look; the glyph buttons keep a fixed width. */
+.cm-tablebar-row,
+.cm-tablebar-column {
+  min-width: 2.4em;
+}
+.cm-tablebar-delete {
+  color: var(--fg-muted);
+}
+.cm-tablebar-separator {
+  width: 1px;
+  margin: 2px 2px;
+  background: var(--border);
+}
+.cm-tablebar-align {
+  max-width: 6rem;
+}

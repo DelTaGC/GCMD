@@ -189,6 +189,57 @@ fn line_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
     )
 }
 
+fn table_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
+    Submenu::with_items(
+        app,
+        "&Table",
+        true,
+        &[
+            &item(
+                app,
+                "table.insertRowAbove",
+                "Insert Row &Above",
+                Some("CmdOrCtrl+Shift+Enter"),
+            )?,
+            &item(
+                app,
+                "table.insertRowBelow",
+                "Insert Row &Below",
+                Some("CmdOrCtrl+Enter"),
+            )?,
+            &item(app, "table.deleteRow", "Delete &Row", None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &item(app, "table.insertColumnLeft", "Insert Column &Left", None)?,
+            &item(app, "table.insertColumnRight", "Insert Column Ri&ght", None)?,
+            &item(app, "table.deleteColumn", "Delete &Column", None)?,
+            &item(
+                app,
+                "table.moveColumnLeft",
+                "Move Column Le&ft",
+                Some("Shift+Alt+Left"),
+            )?,
+            &item(
+                app,
+                "table.moveColumnRight",
+                "Move Column Rig&ht",
+                Some("Shift+Alt+Right"),
+            )?,
+            &PredefinedMenuItem::separator(app)?,
+            &item(app, "table.alignColumnNone", "Column: &Default", None)?,
+            &item(app, "table.alignColumnLeft", "Column: Align L&eft", None)?,
+            &item(
+                app,
+                "table.alignColumnCenter",
+                "Column: Align Ce&nter",
+                None,
+            )?,
+            &item(app, "table.alignColumnRight", "Column: Align Righ&t", None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &item(app, "table.align", "Align &Table", Some("Shift+Alt+F"))?,
+        ],
+    )
+}
+
 /// Undo/Redo (and on macOS Cut/Copy/Paste/Select All) at the top of Edit.
 ///
 /// On Windows and Linux our items carry no accelerator on purpose: the key
@@ -235,9 +286,9 @@ fn edit_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
         &format_submenu(app)?,
         &heading_submenu(app)?,
         &line_submenu(app)?,
+        &table_submenu(app)?,
         &PredefinedMenuItem::separator(app)?,
         &item(app, "list.toggleTask", "Toggle &Task", Some("CmdOrCtrl+L"))?,
-        &item(app, "table.align", "&Align Table", Some("Shift+Alt+F"))?,
         &item(
             app,
             "code.detectLanguage",

@@ -38,7 +38,7 @@ checklists must still pass.
 - [ ] Edit > Format, Heading and Line submenus list the commands with their shortcuts; each entry runs the command (Bold, Heading 2, Duplicate, Move Up…).
 - [ ] Edit > Find Next (F3) and Find Previous (Shift+F3) step through matches.
 - [ ] Ctrl+L cycles a line: plain text -> `- [ ] `, list item -> task, open -> done -> open; blockquoted lines keep their `>`.
-- [ ] Edit > Toggle Task, Align Table and Detect Code Language show Ctrl+L, Shift+Alt+F and Shift+Alt+L.
+- [ ] Edit > Toggle Task and Detect Code Language show Ctrl+L and Shift+Alt+L; Edit > Table > Align Table shows Shift+Alt+F.
 - [ ] Ctrl+Z / Ctrl+Y / Ctrl+A still work inside the search panel's input fields.
 
 ## Theme

@@ -22,6 +22,7 @@ import { linkCompletion } from "./linkCompletion";
 import { linkOpener } from "./links";
 import { livePreview } from "./livePreview";
 import { quickbar } from "./quickbar";
+import { tableBar } from "./tableBar";
 import { editorTheme } from "./theme";
 import { isWrapping, wrapExtension } from "./wrap";
 
@@ -67,6 +68,7 @@ export function createEditorState(
       linkOpener,
       linkCompletion,
       quickbar,
+      tableBar,
       search({ top: true }),
       buildKeymap(),
       editorTheme(dark),

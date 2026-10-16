@@ -17,6 +17,7 @@ import {
   deleteLine,
   indentLess,
   indentMore,
+  insertBlankLine,
   moveLineDown,
   moveLineUp,
   redo,
@@ -50,7 +51,22 @@ import {
 } from "./listItems";
 import { toggleTask } from "./lists";
 import { defineCommand, type CommandDef, type CommandRunner } from "./registry";
-import { alignTable, nextCell, prevCell } from "./table";
+import {
+  alignColumn,
+  alignTable,
+  deleteColumn,
+  deleteRow,
+  insertColumnLeft,
+  insertColumnRight,
+  insertRowAbove,
+  insertRowBelow,
+  moveColumnLeft,
+  moveColumnRight,
+  nextCell,
+  nextRow,
+  prevCell,
+} from "./table";
+import { dismissTableBar, tableBarVisible } from "../tableBar";
 
 /** Hides the quickbar; false when it is not showing so Escape falls through. */
 const hideQuickbar: CommandRunner = (view) => {
@@ -58,6 +74,15 @@ const hideQuickbar: CommandRunner = (view) => {
     return false;
   }
   view.dispatch({ effects: dismissQuickbar.of(null) });
+  return true;
+};
+
+/** Hides the table bar; false when it is not showing. */
+const hideTableBar: CommandRunner = (view) => {
+  if (!tableBarVisible(view.state)) {
+    return false;
+  }
+  view.dispatch({ effects: dismissTableBar.of(null) });
   return true;
 };
 
@@ -110,7 +135,57 @@ export const editorCommands: readonly CommandDef[] = [
   }),
   defineCommand({ id: "table.nextCell", title: "Next table cell", run: nextCell }),
   defineCommand({ id: "table.prevCell", title: "Previous table cell", run: prevCell }),
+  defineCommand({ id: "table.nextRow", title: "Next table row", run: nextRow }),
   defineCommand({ id: "table.align", title: "Align table", run: alignTable }),
+  defineCommand({
+    id: "table.insertRowAbove",
+    title: "Insert row above",
+    run: insertRowAbove,
+  }),
+  // Ctrl+Enter: a table row below the current one, a blank line elsewhere.
+  defineCommand({
+    id: "table.insertRowBelow",
+    title: "Insert row below (blank line outside tables)",
+    run: chain(insertRowBelow, insertBlankLine),
+  }),
+  defineCommand({ id: "table.deleteRow", title: "Delete row", run: deleteRow }),
+  defineCommand({
+    id: "table.insertColumnLeft",
+    title: "Insert column left",
+    run: insertColumnLeft,
+  }),
+  defineCommand({
+    id: "table.insertColumnRight",
+    title: "Insert column right",
+    run: insertColumnRight,
+  }),
+  defineCommand({ id: "table.deleteColumn", title: "Delete column", run: deleteColumn }),
+  defineCommand({ id: "table.moveColumnLeft", title: "Move column left", run: moveColumnLeft }),
+  defineCommand({
+    id: "table.moveColumnRight",
+    title: "Move column right",
+    run: moveColumnRight,
+  }),
+  defineCommand({
+    id: "table.alignColumnNone",
+    title: "Column alignment: default",
+    run: alignColumn("none"),
+  }),
+  defineCommand({
+    id: "table.alignColumnLeft",
+    title: "Column alignment: left",
+    run: alignColumn("left"),
+  }),
+  defineCommand({
+    id: "table.alignColumnCenter",
+    title: "Column alignment: center",
+    run: alignColumn("center"),
+  }),
+  defineCommand({
+    id: "table.alignColumnRight",
+    title: "Column alignment: right",
+    run: alignColumn("right"),
+  }),
   defineCommand({
     id: "code.detectLanguage",
     title: "Detect code block language",
@@ -151,8 +226,8 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "cursor.selectLineUp", title: "Extend selection up", run: selectLineUp }),
   defineCommand({
     id: "line.continueMarkup",
-    title: "Accept completion, or new line (continue list or quote)",
-    run: chain(acceptCompletion, withRenumber(insertNewlineContinueMarkup)),
+    title: "Accept completion, next table row, or new line (continue list or quote)",
+    run: chain(acceptCompletion, nextRow, withRenumber(insertNewlineContinueMarkup)),
   }),
   defineCommand({
     id: "line.deleteMarkupBackward",
@@ -164,8 +239,9 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "edit.selectAll", title: "Select all", run: selectAll }),
   defineCommand({
     id: "edit.escape",
-    title: "Escape (close completion, hide quickbar, close search, collapse selection)",
-    run: chain(closeCompletion, hideQuickbar, closeSearchPanel, simplifySelection),
+    title:
+      "Escape (close completion, hide quickbar or table bar, close search, collapse selection)",
+    run: chain(closeCompletion, hideQuickbar, hideTableBar, closeSearchPanel, simplifySelection),
   }),
   defineCommand({ id: "search.find", title: "Find", run: openSearchPanel }),
   defineCommand({ id: "search.replace", title: "Replace", run: openSearchPanel }),

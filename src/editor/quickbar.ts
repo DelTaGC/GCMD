@@ -32,11 +32,32 @@ interface QuickbarState {
   readonly tooltip: Tooltip | null;
 }
 
-interface Button {
+export interface Button {
   readonly command: string;
   readonly label: string;
   readonly title: string;
   readonly className: string;
+}
+
+/**
+ * A toolbar button that runs a registry command and keeps the editor
+ * focused (the selection stays intact). Shared with the table bar.
+ */
+export function commandButton(view: EditorView, button: Button): HTMLButtonElement {
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = `cm-quickbar-button ${button.className}`;
+  element.textContent = button.label;
+  const shortcut = shortcutLabel(button.command);
+  element.title = shortcut === null ? button.title : `${button.title} (${shortcut})`;
+  element.setAttribute("aria-label", button.title);
+  element.addEventListener("mousedown", (event) => {
+    event.preventDefault();
+  });
+  element.addEventListener("click", () => {
+    runCommand(button.command, view);
+  });
+  return element;
 }
 
 export const QUICKBAR_BUTTONS: readonly Button[] = [
@@ -102,21 +123,7 @@ function buildBar(view: EditorView): TooltipView {
   dom.append(select);
 
   for (const button of QUICKBAR_BUTTONS) {
-    const element = document.createElement("button");
-    element.type = "button";
-    element.className = `cm-quickbar-button ${button.className}`;
-    element.textContent = button.label;
-    const shortcut = shortcutLabel(button.command);
-    element.title = shortcut === null ? button.title : `${button.title} (${shortcut})`;
-    element.setAttribute("aria-label", button.title);
-    // Keep the editor focused and the selection intact.
-    element.addEventListener("mousedown", (event) => {
-      event.preventDefault();
-    });
-    element.addEventListener("click", () => {
-      runCommand(button.command, view);
-    });
-    dom.append(element);
+    dom.append(commandButton(view, button));
   }
 
   return {

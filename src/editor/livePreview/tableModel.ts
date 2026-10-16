@@ -208,38 +208,74 @@ function delimiterCell(width: number, align: Align): string {
   }
 }
 
-/** Column widths of the aligned table (at least 3, so delimiters fit). */
-export function columnWidths(model: TableModel): number[] {
-  const columns = model.header.cells.length;
+/** Widths of `columns` columns over rows of cell texts (at least 3, so delimiters fit). */
+function widthsOf(columns: number, rows: readonly (readonly string[])[]): number[] {
   const widths: number[] = Array.from({ length: columns }, () => 3);
-  for (const row of [model.header, ...model.body]) {
-    row.cells.forEach((cell, index) => {
+  for (const row of rows) {
+    row.forEach((text, index) => {
       if (index < columns) {
-        widths[index] = Math.max(widths[index] ?? 3, displayWidth(cell.text));
+        widths[index] = Math.max(widths[index] ?? 3, displayWidth(text));
       }
     });
   }
   return widths;
 }
 
-function formatRow(row: TableRow, widths: readonly number[], aligns: readonly Align[]): string {
+/** Column widths of the aligned table (at least 3, so delimiters fit). */
+export function columnWidths(model: TableModel): number[] {
+  return widthsOf(
+    model.header.cells.length,
+    [model.header, ...model.body].map((row) => row.cells.map((cell) => cell.text)),
+  );
+}
+
+interface RowLayout {
+  readonly line: string;
+  /** Offset in `line` of each cell's content (empty for the delimiter row). */
+  readonly starts: readonly number[];
+}
+
+function layoutRow(
+  prefix: string,
+  kind: RowKind,
+  cells: readonly string[],
+  widths: readonly number[],
+  aligns: readonly Align[],
+): RowLayout {
   const columns = widths.length;
-  const parts: string[] = [];
+  const starts: number[] = [];
+  let line = `${prefix}|`;
   for (let c = 0; c < columns; c += 1) {
     const width = widths[c] ?? 3;
     const align = aligns[c] ?? "none";
-    parts.push(
-      row.kind === "delimiter"
-        ? delimiterCell(width, align)
-        : pad(row.cells[c]?.text ?? "", width, align),
-    );
+    line += " ";
+    if (kind === "delimiter") {
+      line += delimiterCell(width, align);
+    } else {
+      const text = cells[c] ?? "";
+      const padded = pad(text, width, align);
+      starts.push(line.length + padded.indexOf(text));
+      line += padded;
+    }
+    line += " |";
   }
   // Cells beyond the header width are not part of the GFM table but must
   // never be lost; they are appended as they were.
-  for (const extra of row.cells.slice(columns)) {
-    parts.push(extra.text);
+  for (const extra of cells.slice(columns)) {
+    starts.push(line.length + 1);
+    line += ` ${extra} |`;
   }
-  return `${row.prefix}| ${parts.join(" | ")} |`;
+  return { line, starts };
+}
+
+function formatRow(row: TableRow, widths: readonly number[], aligns: readonly Align[]): string {
+  return layoutRow(
+    row.prefix,
+    row.kind,
+    row.cells.map((cell) => cell.text),
+    widths,
+    aligns,
+  ).line;
 }
 
 /**
@@ -247,11 +283,75 @@ function formatRow(row: TableRow, widths: readonly number[], aligns: readonly Al
  * row's prefix (it lies before `model.from` and is not rewritten).
  */
 export function formatTable(model: TableModel): string {
-  const widths = columnWidths(model);
-  const lines = allRows(model).map((row) => formatRow(row, widths, model.aligns));
-  const first = lines[0] ?? "";
-  lines[0] = first.slice(model.header.prefix.length);
-  return lines.join("\n");
+  return formatGrid(gridOf(model)).text;
+}
+
+// ---------------------------------------------------------------------------
+// Grid: the table as plain cell texts, what the structural commands edit
+
+export interface GridRow {
+  readonly prefix: string;
+  readonly cells: readonly string[];
+}
+
+export interface Grid {
+  readonly aligns: readonly Align[];
+  readonly header: GridRow;
+  /** Prefix of the delimiter row, used for rows inserted right after it. */
+  readonly delimiterPrefix: string;
+  readonly body: readonly GridRow[];
+}
+
+/**
+ * The model as a grid. Rows shorter than the header are padded with empty
+ * cells; cells beyond the header width are kept.
+ */
+export function gridOf(model: TableModel): Grid {
+  const columns = model.header.cells.length;
+  const row = (source: TableRow): GridRow => {
+    const cells = source.cells.map((cell) => cell.text);
+    while (cells.length < columns) {
+      cells.push("");
+    }
+    return { prefix: source.prefix, cells };
+  };
+  return {
+    aligns: [...model.aligns],
+    header: row(model.header),
+    delimiterPrefix: model.delimiter.prefix,
+    body: model.body.map(row),
+  };
+}
+
+export interface GridLayout {
+  /** The aligned source, without the header row's prefix (see `formatTable`). */
+  readonly text: string;
+  /** Offset in `text` of each cell's content: `cells[0]` is the header, then the body rows. */
+  readonly cells: readonly (readonly number[])[];
+}
+
+/** Formats a grid; the offsets let a command place the cursor in a cell. */
+export function formatGrid(grid: Grid): GridLayout {
+  const columns = grid.header.cells.length;
+  const widths = widthsOf(columns, [grid.header.cells, ...grid.body.map((row) => row.cells)]);
+  const lines: string[] = [];
+  const cells: number[][] = [];
+  let offset = 0;
+  const push = (layout: RowLayout, drop: number): void => {
+    const line = layout.line.slice(drop);
+    cells.push(layout.starts.map((start) => offset + start - drop));
+    lines.push(line);
+    offset += line.length + 1;
+  };
+  const header = grid.header;
+  push(layoutRow(header.prefix, "header", header.cells, widths, grid.aligns), header.prefix.length);
+  const delimiter = layoutRow(grid.delimiterPrefix, "delimiter", [], widths, grid.aligns);
+  lines.push(delimiter.line);
+  offset += delimiter.line.length + 1;
+  for (const row of grid.body) {
+    push(layoutRow(row.prefix, "body", row.cells, widths, grid.aligns), 0);
+  }
+  return { text: lines.join("\n"), cells };
 }
 
 export interface TextChange {

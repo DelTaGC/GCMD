@@ -70,6 +70,11 @@ export const shortcuts: readonly Shortcut[] = [
   // Lists, tables and code
   { key: "Mod-l", command: "list.toggleTask" },
   { key: "Shift-Alt-f", command: "table.align" },
+  // Ctrl+Enter keeps its base meaning (blank line below) outside tables.
+  { key: "Mod-Enter", command: "table.insertRowBelow" },
+  { key: "Mod-Shift-Enter", command: "table.insertRowAbove" },
+  { key: "Shift-Alt-ArrowLeft", command: "table.moveColumnLeft" },
+  { key: "Shift-Alt-ArrowRight", command: "table.moveColumnRight" },
   { key: "Shift-Alt-l", command: "code.detectLanguage" },
   // Editing
   { key: "Mod-z", command: "edit.undo" },
