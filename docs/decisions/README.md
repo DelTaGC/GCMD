@@ -17,3 +17,4 @@ before introducing a new technology or changing one of these.
 | [0010](0010-self-update.md)                      | Self-update with tauri-plugin-updater and GitHub Releases         |
 | [0011](0011-license.md)                          | GPL-3.0-or-later; elkjs left out of the build (amended by 0012)   |
 | [0012](0012-elkjs-exception.md)                  | GPLv3 section 7 permission for elkjs; ELK layouts restored        |
+| [0013](0013-link-completion.md)                  | Link destination completion: folder by folder, plus `#` headings  |

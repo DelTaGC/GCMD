@@ -2,6 +2,8 @@
 
 use std::path::{Path, PathBuf};
 
+use serde::Serialize;
+
 use crate::cli;
 use crate::error::AppError;
 
@@ -74,6 +76,57 @@ pub fn resolve_href(base: Option<&Path>, href: &str) -> Result<PathBuf, AppError
         return Err(AppError::Io(format!("not a file: {display}")));
     }
     Ok(PathBuf::from(display))
+}
+
+/// One entry of a directory listing, for link-destination completion.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DirEntry {
+    pub name: String,
+    pub is_dir: bool,
+}
+
+/// Most entries `list_dir` returns; a huge directory is cut, not refused.
+pub const MAX_DIR_ENTRIES: usize = 2000;
+
+/// Lists the directory part of a link destination being typed (`""`,
+/// `docs/`, `../img/`, `C:/x/`), resolved like `resolve_href`: percent-escapes
+/// decoded, absolute paths as-is, relative ones against the directory of the
+/// document at `base`. Not recursive. Directories come first, then names in
+/// case-insensitive order; symlinks count as what they point to; names that
+/// are not valid UTF-8 are skipped.
+pub fn list_dir(base: Option<&Path>, dir: &str) -> Result<Vec<DirEntry>, AppError> {
+    if let Some(other) = scheme(dir) {
+        return Err(AppError::InvalidPath(format!(
+            "unsupported link scheme `{other}:`"
+        )));
+    }
+    let decoded = cli::percent_decode(dir).unwrap_or_else(|| dir.to_string());
+    let path = PathBuf::from(decoded);
+    let target = if path.is_absolute() {
+        path
+    } else {
+        let doc_dir = base.and_then(parent_dir).ok_or_else(|| {
+            AppError::InvalidPath(format!("cannot list `{dir}` without a saved document"))
+        })?;
+        doc_dir.join(path)
+    };
+
+    let mut entries: Vec<DirEntry> = std::fs::read_dir(&target)?
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let is_dir = entry.path().is_dir();
+            let name = entry.file_name().into_string().ok()?;
+            Some(DirEntry { name, is_dir })
+        })
+        .collect();
+    entries.sort_by(|a, b| {
+        b.is_dir
+            .cmp(&a.is_dir)
+            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+    });
+    entries.truncate(MAX_DIR_ENTRIES);
+    Ok(entries)
 }
 
 #[cfg(test)]
@@ -239,6 +292,82 @@ mod tests {
         assert_eq!(scheme("C:/x.png"), None);
         assert_eq!(scheme("file:///x"), Some("file".into()));
         assert_eq!(scheme("a.png"), None);
+    }
+
+    fn names(entries: &[DirEntry]) -> Vec<(&str, bool)> {
+        entries
+            .iter()
+            .map(|e| (e.name.as_str(), e.is_dir))
+            .collect()
+    }
+
+    #[test]
+    fn lists_document_directory_dirs_first() {
+        let dir = tempfile::tempdir().unwrap();
+        let doc = dir.path().join("doc.md");
+        touch(&doc);
+        touch(&dir.path().join("b.png"));
+        touch(&dir.path().join("A.md"));
+        fs::create_dir(dir.path().join("zeta")).unwrap();
+        fs::create_dir(dir.path().join("Alpha")).unwrap();
+        let entries = list_dir(Some(&doc), "").unwrap();
+        assert_eq!(
+            names(&entries),
+            vec![
+                ("Alpha", true),
+                ("zeta", true),
+                ("A.md", false),
+                ("b.png", false),
+                ("doc.md", false),
+            ]
+        );
+    }
+
+    #[test]
+    fn lists_relative_parent_and_encoded_directories() {
+        let dir = tempfile::tempdir().unwrap();
+        let doc = dir.path().join("notes").join("doc.md");
+        touch(&doc);
+        touch(&dir.path().join("my img").join("a.png"));
+        let up = list_dir(Some(&doc), "../").unwrap();
+        assert_eq!(names(&up), vec![("my img", true), ("notes", true)]);
+        let inner = list_dir(Some(&doc), "../my%20img/").unwrap();
+        assert_eq!(names(&inner), vec![("a.png", false)]);
+        if cfg!(windows) {
+            let backslash = list_dir(Some(&doc), r"..\my img\").unwrap();
+            assert_eq!(names(&backslash), vec![("a.png", false)]);
+        }
+    }
+
+    #[test]
+    fn lists_absolute_directory_without_document() {
+        let dir = tempfile::tempdir().unwrap();
+        touch(&dir.path().join("x.md"));
+        let abs = format!("{}/", dir.path().to_string_lossy());
+        assert_eq!(names(&list_dir(None, &abs).unwrap()), vec![("x.md", false)]);
+    }
+
+    #[test]
+    fn listing_errors() {
+        let dir = tempfile::tempdir().unwrap();
+        let doc = dir.path().join("doc.md");
+        touch(&doc);
+        assert!(matches!(
+            list_dir(None, "sub/").unwrap_err(),
+            AppError::InvalidPath(_)
+        ));
+        assert!(matches!(
+            list_dir(Some(&doc), "https://example.com/").unwrap_err(),
+            AppError::InvalidPath(_)
+        ));
+        assert!(matches!(
+            list_dir(Some(&doc), "missing/").unwrap_err(),
+            AppError::Io(_)
+        ));
+        assert!(matches!(
+            list_dir(Some(&doc), "doc.md").unwrap_err(),
+            AppError::Io(_)
+        ));
     }
 
     #[test]

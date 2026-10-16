@@ -4,8 +4,16 @@
  * state they need; they still go through the same registry.
  */
 import {
+  acceptCompletion,
+  closeCompletion,
+  moveCompletionSelection,
+  startCompletion,
+} from "@codemirror/autocomplete";
+import {
   copyLineDown,
   copyLineUp,
+  cursorPageDown,
+  cursorPageUp,
   deleteLine,
   indentLess,
   indentMore,
@@ -15,6 +23,8 @@ import {
   selectAll,
   selectLineDown,
   selectLineUp,
+  selectPageDown,
+  selectPageUp,
   simplifySelection,
   undo,
 } from "@codemirror/commands";
@@ -86,10 +96,12 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "line.delete", title: "Delete line", run: deleteLine }),
   defineCommand({ id: "line.indent", title: "Indent", run: indentMore }),
   defineCommand({ id: "line.outdent", title: "Outdent", run: indentLess }),
+  // The completion popup (editor/linkCompletion.ts) takes Enter, Tab,
+  // arrows, Page keys and Escape only while it is open.
   defineCommand({
     id: "edit.tab",
-    title: "Next table cell, nest list item, or indent",
-    run: chain(nextCell, withRenumber(indentListItem), indentMore),
+    title: "Accept completion, next table cell, nest list item, or indent",
+    run: chain(acceptCompletion, nextCell, withRenumber(indentListItem), indentMore),
   }),
   defineCommand({
     id: "edit.shiftTab",
@@ -104,8 +116,33 @@ export const editorCommands: readonly CommandDef[] = [
     title: "Detect code block language",
     run: detectFenceLanguage,
   }),
-  defineCommand({ id: "cursor.lineDown", title: "Cursor down", run: lineDownIntoBlocks }),
-  defineCommand({ id: "cursor.lineUp", title: "Cursor up", run: lineUpIntoBlocks }),
+  defineCommand({
+    id: "cursor.lineDown",
+    title: "Cursor down (next completion)",
+    run: chain(moveCompletionSelection(true), lineDownIntoBlocks),
+  }),
+  defineCommand({
+    id: "cursor.lineUp",
+    title: "Cursor up (previous completion)",
+    run: chain(moveCompletionSelection(false), lineUpIntoBlocks),
+  }),
+  defineCommand({
+    id: "cursor.pageDown",
+    title: "Page down",
+    run: chain(moveCompletionSelection(true, "page"), cursorPageDown),
+  }),
+  defineCommand({
+    id: "cursor.pageUp",
+    title: "Page up",
+    run: chain(moveCompletionSelection(false, "page"), cursorPageUp),
+  }),
+  defineCommand({ id: "cursor.selectPageDown", title: "Select page down", run: selectPageDown }),
+  defineCommand({ id: "cursor.selectPageUp", title: "Select page up", run: selectPageUp }),
+  defineCommand({
+    id: "completion.start",
+    title: "Suggest link destinations",
+    run: startCompletion,
+  }),
   defineCommand({
     id: "cursor.selectLineDown",
     title: "Extend selection down",
@@ -114,8 +151,8 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "cursor.selectLineUp", title: "Extend selection up", run: selectLineUp }),
   defineCommand({
     id: "line.continueMarkup",
-    title: "New line (continue list or quote)",
-    run: withRenumber(insertNewlineContinueMarkup),
+    title: "Accept completion, or new line (continue list or quote)",
+    run: chain(acceptCompletion, withRenumber(insertNewlineContinueMarkup)),
   }),
   defineCommand({
     id: "line.deleteMarkupBackward",
@@ -127,8 +164,8 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "edit.selectAll", title: "Select all", run: selectAll }),
   defineCommand({
     id: "edit.escape",
-    title: "Escape (hide quickbar, close search, collapse selection)",
-    run: chain(hideQuickbar, closeSearchPanel, simplifySelection),
+    title: "Escape (close completion, hide quickbar, close search, collapse selection)",
+    run: chain(closeCompletion, hideQuickbar, closeSearchPanel, simplifySelection),
   }),
   defineCommand({ id: "search.find", title: "Find", run: openSearchPanel }),
   defineCommand({ id: "search.replace", title: "Replace", run: openSearchPanel }),

@@ -19,7 +19,7 @@ lines).
 | Cold start to editable under 1 s                   | 300 ms warm, 580 ms first launch after a build (sample.md)  | Met       |
 | 1 MB document opens under 500 ms                   | 330 ms from process start to document loaded (large.md)     | Met       |
 | Typing latency under 16 ms at the end of 20k lines | 9 ms median, 15 ms p90 per keystroke (20k-lines.md)         | Met       |
-| Startup bundle under 1 MB gzip                     | entry chunk 335 kB, 119 kB gzip; mermaid and languages lazy | Met       |
+| Startup bundle under 1 MB gzip                     | entry chunk 371 kB, 131 kB gzip; mermaid and languages lazy | Met       |
 | Memory after 10 minutes of editing                 | JS heap back to 29 MB after 6 000 edits (33 MB before)      | No growth |
 
 The 1 MB fixture is outside the typing budget: 22 ms median per keystroke
@@ -100,8 +100,9 @@ budget refers to.
 
 `npm run build` prints the chunk sizes. The entry chunk
 (`dist/assets/index-*.js`) must stay under 1 MB gzip: 335 kB raw, 119 kB
-gzip at phase 5. Mermaid (`mermaid.core-*`, 85 kB raw core plus diagram
-chunks) and every fence language load on demand.
+gzip at phase 5, 345 kB / 123 kB before link completion, 371 kB / 131 kB
+with it (2026-10-16, ADR 0013). Mermaid (`mermaid.core-*`, 85 kB raw core
+plus diagram chunks) and every fence language load on demand.
 
 ## Known cost: fences and mixed parsing
 

@@ -60,6 +60,13 @@ export const shortcuts: readonly Shortcut[] = [
   { key: "ArrowUp", command: "cursor.lineUp" },
   { key: "Shift-ArrowDown", command: "cursor.selectLineDown" },
   { key: "Shift-ArrowUp", command: "cursor.selectLineUp" },
+  // Link completion: the popup keys (Enter, Tab, arrows, Page keys, Escape)
+  // are chained into the commands those keys already run.
+  { key: "PageDown", command: "cursor.pageDown" },
+  { key: "PageUp", command: "cursor.pageUp" },
+  { key: "Shift-PageDown", command: "cursor.selectPageDown" },
+  { key: "Shift-PageUp", command: "cursor.selectPageUp" },
+  { key: "Ctrl-Space", command: "completion.start" },
   // Lists, tables and code
   { key: "Mod-l", command: "list.toggleTask" },
   { key: "Shift-Alt-f", command: "table.align" },

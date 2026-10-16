@@ -51,6 +51,13 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   (visible when the main selection is non-empty, no drag in progress, not
   dismissed) whose buttons run registry commands. `edit.escape` dismisses
   it before closing search or collapsing the selection.
+- `editor/linkCompletion.ts` completes link destinations (ADR 0013): the
+  only `autocompletion` source (HTML tag completion is overridden). It
+  finds the destination from the line text, lists one folder at a time
+  through the `dirLister` facet (IPC `list_dir` by default; tests and the
+  browser dev page supply their own) and offers `#` anchors from
+  `editor/outline.ts`. Its keys are chained into the existing Enter, Tab,
+  arrow, Page and Escape commands, so the keymap keeps one command per key.
 - `ipc/`: the only module allowed to import `@tauri-apps/api` or plugins.
   Each Rust command gets a typed wrapper function with the same name.
 - `chrome/`: plain DOM builders returning an element plus an `update()`;

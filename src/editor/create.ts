@@ -18,6 +18,7 @@ import {
 import "./commands";
 import { documentPathExtension } from "./document";
 import { buildKeymap } from "./keymap";
+import { linkCompletion } from "./linkCompletion";
 import { linkOpener } from "./links";
 import { livePreview } from "./livePreview";
 import { quickbar } from "./quickbar";
@@ -64,6 +65,7 @@ export function createEditorState(
       markdownExtension(),
       livePreview,
       linkOpener,
+      linkCompletion,
       quickbar,
       search({ top: true }),
       buildKeymap(),

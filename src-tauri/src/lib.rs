@@ -340,6 +340,18 @@ fn resolve_path(base: Option<String>, href: String) -> Result<String, AppError> 
     Ok(cli::display_path(&path))
 }
 
+/// Lists the directory part `dir` of a link destination being typed,
+/// relative to `base`'s directory, for link completion. Read-only, not
+/// recursive, names and kinds only.
+#[tauri::command]
+async fn list_dir(base: Option<String>, dir: String) -> Result<Vec<paths::DirEntry>, AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        paths::list_dir(base.as_deref().map(Path::new), &dir)
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.to_string()))?
+}
+
 /// Spawns another GCMD process, optionally with a file to open. One window
 /// edits one file; a second file means a second process.
 #[tauri::command]
@@ -427,6 +439,7 @@ pub fn run() {
             open_new_window,
             resolve_asset,
             resolve_path,
+            list_dir,
             update_check,
             update_install,
             update_other_instances,

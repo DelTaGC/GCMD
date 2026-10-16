@@ -5,16 +5,16 @@ is not OS integration belongs in the TypeScript frontend.
 
 ## What lives here
 
-| Module        | Responsibility                                                                                              |
-| ------------- | ----------------------------------------------------------------------------------------------------------- |
-| `lib.rs`      | Builder setup, plugin registration, `generate_handler!` list                                                |
-| `document.rs` | Read/write a file as bytes; detect and preserve encoding, BOM, line endings, trailing newline; report mtime |
-| `watcher.rs`  | `notify` watcher on the document's directory, debounced, emits `file-changed` with the current mtime        |
-| `menu.rs`     | Native menu, recent-files submenu, menu events forwarded to the window                                      |
-| `settings.rs` | Versioned JSON settings in the app-config dir; migrations                                                   |
-| `cli.rs`      | Launch arguments and macOS `RunEvent::Opened`; resolves to an absolute path                                 |
-| `paths.rs`    | Resolves markdown hrefs (relative, absolute, `file://`) to existing files next to the open document         |
-| `updater.rs`  | Self-update (ADR 0010): check, download + install + restart, other-instance guard on Windows                |
+| Module        | Responsibility                                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| `lib.rs`      | Builder setup, plugin registration, `generate_handler!` list                                                  |
+| `document.rs` | Read/write a file as bytes; detect and preserve encoding, BOM, line endings, trailing newline; report mtime   |
+| `watcher.rs`  | `notify` watcher on the document's directory, debounced, emits `file-changed` with the current mtime          |
+| `menu.rs`     | Native menu, recent-files submenu, menu events forwarded to the window                                        |
+| `settings.rs` | Versioned JSON settings in the app-config dir; migrations                                                     |
+| `cli.rs`      | Launch arguments and macOS `RunEvent::Opened`; resolves to an absolute path                                   |
+| `paths.rs`    | Resolves markdown hrefs (relative, absolute, `file://`) to existing files; lists a folder for link completion |
+| `updater.rs`  | Self-update (ADR 0010): check, download + install + restart, other-instance guard on Windows                  |
 
 ## Rules
 
