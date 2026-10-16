@@ -257,8 +257,42 @@ export class TableWidget extends WidgetType {
     for (let r = 0; r <= rows; r += 1) {
       add("row", r);
     }
-    wrapper.addEventListener("mouseenter", place);
+    // The handles appear when the pointer enters the widget and stay until
+    // it is farther than a handle away from the box, so reaching for a
+    // handle that hangs outside the edge does not make it vanish.
+    const near = (x: number, y: number): boolean => {
+      const box = wrapper.getBoundingClientRect();
+      return (
+        x >= box.left - HANDLE_ZONE &&
+        x <= box.right + HANDLE_ZONE &&
+        y >= box.top - HANDLE_ZONE &&
+        y <= box.bottom + HANDLE_ZONE
+      );
+    };
+    const hide = (): void => {
+      wrapper.classList.remove("cm-table-hover");
+      hideGuide();
+      document.removeEventListener("mousemove", onMove);
+    };
+    const onMove = (event: MouseEvent): void => {
+      if (!near(event.clientX, event.clientY)) {
+        hide();
+      }
+    };
+    wrapper.addEventListener("mouseenter", () => {
+      place();
+      if (!wrapper.classList.contains("cm-table-hover")) {
+        wrapper.classList.add("cm-table-hover");
+        document.addEventListener("mousemove", onMove);
+      }
+    });
     scroller.addEventListener("scroll", place);
+    cleanups.set(wrapper, hide);
+  }
+
+  override destroy(dom: HTMLElement): void {
+    cleanups.get(dom)?.();
+    cleanups.delete(dom);
   }
 
   /** Puts the cursor next to the boundary and runs the insert command. */
@@ -294,6 +328,12 @@ type HandleKind = "column" | "row";
 
 /** Distance (px) between a handle's centre and the table edge it sits on. */
 const HANDLE_OFFSET = 9;
+
+/** How far (px) outside the widget the pointer may stray before the handles hide. */
+const HANDLE_ZONE = 24;
+
+/** Removes a widget's document-level listener when its DOM is destroyed. */
+const cleanups = new WeakMap<HTMLElement, () => void>();
 
 /**
  * The slot of cell number `cell` in `row`: from the character after the

@@ -376,7 +376,7 @@
   pointer-events: none;
   transition: opacity 0.12s;
 }
-.cm-table-widget:hover .cm-table-handle {
+.cm-table-widget.cm-table-hover .cm-table-handle {
   opacity: 1;
   pointer-events: auto;
 }
