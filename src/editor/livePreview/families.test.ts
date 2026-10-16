@@ -283,7 +283,44 @@ describe("tables", () => {
     const active = listDecorations(run(visitTable, doc, 5));
     expect(active.filter((e) => e.kind.startsWith("line:cm-table-line"))).toHaveLength(3);
     // Three pipes per cell row plus the delimiter row as one node.
-    expect(active.filter((e) => e.kind === "mark:cm-table-delimiter")).toHaveLength(7);
+    expect(active.filter((e) => e.kind.startsWith("mark:cm-table-delimiter"))).toHaveLength(7);
+    expect(active.filter((e) => e.kind === "mark:cm-table-delimiter cm-table-pipe")).toHaveLength(
+      6,
+    );
+    expect(active.filter((e) => e.kind === "mark:cm-table-delimiter")).toEqual([
+      { from: 13, to: 22, kind: "mark:cm-table-delimiter" },
+    ]);
+  });
+
+  it("highlights the cell at the cursor and, from a body cell, its header cell", () => {
+    const cells = (cursor: number): string[] =>
+      kinds(run(visitTable, doc, cursor)).filter((k) => k.includes("-active"));
+    // In the header: the slot " a " between the pipes, nothing else.
+    expect(cells(5)).toEqual(["mark:cm-table-cell-active@4-7"]);
+    // In a body cell: its slot and the header slot above it.
+    expect(cells(25)).toEqual([
+      "mark:cm-table-header-active@4-7",
+      "mark:cm-table-cell-active@24-27",
+    ]);
+    expect(cells(29)).toEqual([
+      "mark:cm-table-header-active@8-11",
+      "mark:cm-table-cell-active@28-31",
+    ]);
+    // On the delimiter row there is no cell to highlight.
+    expect(cells(15)).toEqual([]);
+  });
+
+  it("highlights empty cells and rows without a leading pipe", () => {
+    const sparse = "a | b\n--|--\n| |";
+    // Row 3 is "| |": its only cell is empty, its slot the space between the pipes.
+    expect(kinds(run(visitTable, sparse, 13)).filter((k) => k.includes("-active"))).toEqual([
+      "mark:cm-table-header-active@0-2",
+      "mark:cm-table-cell-active@13-14",
+    ]);
+    // The header has no leading pipe: the slot starts at the row.
+    expect(kinds(run(visitTable, sparse, 0)).filter((k) => k.includes("-active"))).toEqual([
+      "mark:cm-table-cell-active@0-2",
+    ]);
   });
 
   it("finds tables nested in lists and quotes", () => {

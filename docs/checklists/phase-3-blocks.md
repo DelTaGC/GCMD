@@ -22,6 +22,8 @@ must still pass.
 - [ ] Delete row on a body row removes it; on the header it promotes the first body row; on a header-only table it removes the table. Each structural command is one Ctrl+Z step and leaves the table aligned.
 - [ ] The alignment dropdown shows the current column's alignment and changing it rewrites the delimiter cell (`:--`, `:-:`, `--:`); the rendered widget follows once the cursor leaves.
 - [ ] Edit > Table lists the same commands with Ctrl+Enter, Ctrl+Shift+Enter, Shift+Alt+Left/Right and Shift+Alt+F.
+- [ ] Hovering a rendered table shows (+) handles on every column boundary (top edge) and row boundary (left edge); hovering a handle draws an accent guide line on that boundary. Clicking one opens the table in raw mode with the cursor in a new empty column or row at that boundary (the top handle makes a new header, the old one becoming the first body row). The widget's height does not change on hover.
+- [ ] In raw mode the single pipes draw as thin column rules joining from row to row (the delimiter row stays muted text); the cell under the cursor has a tinted background and, from a body cell, its header cell is underlined in the accent colour. Both move with the cursor and with Tab; on the delimiter row nothing is highlighted. Check both themes.
 
 ## Mermaid
 
