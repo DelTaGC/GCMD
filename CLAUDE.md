@@ -18,6 +18,8 @@ means a second process.
 
 ## Commands
 
+Note: might require script execution rights, e.g in Win11 PowerShell: `Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process` to allow for a single session.  
+
 ```
 npm run app:dev        # desktop app with hot reload (Vite on :1420 + cargo)
 npm run app:build      # installers -> src-tauri/target/release/bundle/
