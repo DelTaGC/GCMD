@@ -4,15 +4,13 @@ One section per release, newest first. The section of a version becomes the
 GitHub release text and the notes shown in the in-app update banner
 (`tools/release/notes.mjs`), so write it for users.
 
-
 ## 0.2.0
 
-QoL update. 
+QoL update.
 
 - Links: path auto-completion for local files links.
-- Tables: highlight current cell and column header. 
-- Tables: tools bar and handles to move/insert/delete columns and rows.  
-
+- Tables: highlight current cell and column header.
+- Tables: tools bar and handles to move/insert/delete columns and rows.
 
 ## 0.1.0
 

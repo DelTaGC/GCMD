@@ -83,5 +83,8 @@
     "src-tauri/**/*.rs": [
       "rustfmt --edition 2024"
     ]
+  },
+  "allowScripts": {
+    "simple-git-hooks@2.14.0": true
   }
 }

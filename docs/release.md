@@ -35,7 +35,15 @@ this machine.
    Cargo.toml, Cargo.lock), then `npm run check`. If it says
    `THIRD-PARTY-NOTICES.md` is out of date, run `npm run licenses` and commit
    the file (see "Third-party notices").
-3. Commit (`chore(release): vX.Y.Z`), tag and push:
+3. Normalize formatting (else fails on CI/CD), update licenses list
+
+```bash
+  npm run licenses
+  npm run format
+  npm run check
+```
+
+4. Commit (`chore(release): vX.Y.Z`), tag and push:
 
    ```bash
    git tag vX.Y.Z
@@ -45,12 +53,12 @@ this machine.
    git push origin main vX.Y.Z
    ```
 
-4. The `release` workflow builds, signs and uploads to a **draft** release:
+5. The `release` workflow builds, signs and uploads to a **draft** release:
    Windows NSIS installer, macOS universal `.app`/`.dmg`, Linux `.deb` and
    AppImage, their `.sig` files and `latest.json`.
-5. Check the draft: every platform present in `latest.json`; install the
+6. Check the draft: every platform present in `latest.json`; install the
    Windows build on top of the previous version if anything risky changed.
-6. **Publish** the draft. From that moment installed copies find the update
+7. **Publish** the draft. From that moment installed copies find the update
    (within a day, or at once with Help > Check for Updates).
 
 A broken release: publish a fixed `X.Y.Z+1` quickly; never re-use a version
