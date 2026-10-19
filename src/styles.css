@@ -151,8 +151,27 @@ body {
 
 .editor-host {
   grid-row: 2;
+  position: relative;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Text size shown for a moment after zooming (chrome/zoomBadge.ts). */
+.zoom-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 1.25rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+.zoom-badge[hidden] {
+  display: none;
 }
 
 /* Wrap bar under the editor (chrome/wrapBar.ts): margins light, text column darker. */

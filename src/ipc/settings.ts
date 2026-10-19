@@ -31,6 +31,8 @@ export interface Settings {
   sidebarVisible: boolean;
   updates: UpdateSettings;
   wrap: WrapSettings;
+  /** Editor text size in CSS pixels (View > Zoom). */
+  fontSize: number;
 }
 
 export function getSettings(): Promise<Settings> {
@@ -47,6 +49,10 @@ export function setSidebarVisible(visible: boolean): Promise<Settings> {
 
 export function setWrap(wrap: WrapSettings): Promise<Settings> {
   return invoke<Settings>("set_wrap", { wrap });
+}
+
+export function setFontSize(size: number): Promise<Settings> {
+  return invoke<Settings>("set_font_size", { size });
 }
 
 export function addRecentFile(path: string): Promise<Settings> {

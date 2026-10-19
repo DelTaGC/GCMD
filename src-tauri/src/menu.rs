@@ -338,6 +338,23 @@ fn wrap_submenu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::R
     )
 }
 
+/// Zoom items carry no accelerator: muda binds accelerators to physical
+/// keys (US positions), so Ctrl+= would land on a dead key of the
+/// Swiss-French layout. The keymap binds the keys by character instead, and
+/// Ctrl+mouse wheel zooms too (`src/app/zoom.ts`).
+fn zoom_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
+    Submenu::with_items(
+        app,
+        "&Zoom",
+        true,
+        &[
+            &item(app, "view.zoom.in", "Zoom &In", None)?,
+            &item(app, "view.zoom.out", "Zoom &Out", None)?,
+            &item(app, "view.zoom.reset", "&Reset Zoom", None)?,
+        ],
+    )
+}
+
 fn view_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<Submenu<R>> {
     let sidebar = CheckMenuItem::with_id(
         app,
@@ -356,6 +373,7 @@ fn view_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
             &sidebar,
             &theme_submenu(app, settings)?,
             &wrap_submenu(app, settings)?,
+            &zoom_submenu(app)?,
         ],
     )
 }

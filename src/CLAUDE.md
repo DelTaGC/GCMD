@@ -47,6 +47,15 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   `chrome/wrapBar.ts`, the strip under the editor that is dragged and
   double-clicked. It registers `view.wrap.*` for View > Line Wrap.
   `replaceDocument` carries the wrap flag into the new state.
+- Zoom: `app/zoom.ts` owns the editor text size (`fontSize` setting, CSS
+  pixels), steps it with the pure rules in `app/zoomLevels.ts`, applies it
+  through `editor/zoom.ts` (the `--editor-font-size` variable on the editor
+  root, keeping the top line in place) and shows `chrome/zoomBadge.ts`.
+  Ctrl+wheel is a capturing `wheel` listener on the window; keys and View >
+  Zoom run `view.zoom.*`. Document styles must stay in `em` so they scale;
+  UI chrome (sidebar, toolbars, badge) uses `rem` and does not. The fixed
+  wrap width is stored at 100% and multiplied by the zoom scale
+  (`wrap.setScale`); mermaid diagrams scale their width cap with the text.
 - `editor/quickbar.ts` is the selection toolbar: a `showTooltip` state field
   (visible when the main selection is non-empty, no drag in progress, not
   dismissed) whose buttons run registry commands. `edit.escape` dismisses

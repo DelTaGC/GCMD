@@ -111,6 +111,8 @@ describe("formatKey", () => {
     expect(formatKey("Mod-Shift-x")).toMatch(/^(Ctrl|Cmd)\+Shift\+X$/);
     expect(formatKey("Alt-ArrowUp")).toBe("Alt+Up");
     expect(formatKey("F3")).toBe("F3");
+    expect(formatKey("Mod--")).toMatch(/^(Ctrl|Cmd)\+-$/);
+    expect(shortcutLabel("view.zoom.in")).toMatch(/^(Ctrl|Cmd)\+\+$/);
     expect(shortcutLabel("format.strong")).toMatch(/^(Ctrl|Cmd)\+B$/);
     expect(shortcutLabel("format.clearFormatting")).toBeNull();
   });

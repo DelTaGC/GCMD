@@ -7,6 +7,7 @@ import { createOutlineController } from "./app/outline";
 import { createSession } from "./app/session";
 import { createUpdateController } from "./app/updates";
 import { createWrapController } from "./app/wrap";
+import { createZoomController } from "./app/zoom";
 import { createBanner } from "./chrome/banner";
 import { installMenuMnemonics } from "./chrome/menuKeys";
 import { createSidebar } from "./chrome/sidebar";
@@ -15,7 +16,7 @@ import { runCommand } from "./editor/commands";
 import { createEditor, replaceDocument } from "./editor/create";
 import { launchArgs } from "./ipc/app";
 import { onFileChanged, onMenu, onOpenFile } from "./ipc/events";
-import { getSettings, setWrap, type Settings } from "./ipc/settings";
+import { getSettings, setFontSize, setWrap, type Settings } from "./ipc/settings";
 import { isTauri } from "./ipc/env";
 import { onCloseRequested, onFilesDropped } from "./ipc/window";
 
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS: Settings = {
   sidebarVisible: false,
   updates: { check: "auto", lastCheckMs: null, skippedVersion: null },
   wrap: { mode: "full", width: 832, margin: 40 },
+  fontSize: 16,
 };
 
 async function loadSettings(): Promise<Settings> {
@@ -76,6 +78,15 @@ async function bootstrap(): Promise<void> {
     persist: (next) => (isTauri() ? setWrap(next) : Promise.resolve()),
   });
   host.after(wrap.bar.element);
+  const zoom = createZoomController({
+    view,
+    initial: settings.fontSize,
+    persist: (size) => (isTauri() ? setFontSize(size) : Promise.resolve()),
+    onScale: (scale) => {
+      wrap.setScale(scale);
+    },
+  });
+  host.append(zoom.badge.element);
   const current = createSession({
     view,
     banner,
@@ -95,7 +106,7 @@ async function bootstrap(): Promise<void> {
     // Debug handle for the browser console and automated UI checks
     // (`replaceDocument` loads text without IPC, see docs/perf.md).
     Object.assign(window, {
-      gcmd: { view, session: current, outline, sidebar, banner, wrap, replaceDocument },
+      gcmd: { view, session: current, outline, sidebar, banner, wrap, zoom, replaceDocument },
     });
   }
   if (!isTauri()) {

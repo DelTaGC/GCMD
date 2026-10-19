@@ -26,12 +26,16 @@ function maxMargin(available: number): number {
   return Math.floor((available - MIN_TEXT) / 2);
 }
 
-/** The text column for `settings` in an editor `available` pixels wide. */
-export function wrapLayout(settings: WrapSettings, available: number): WrapLayout {
+/**
+ * The text column for `settings` in an editor `available` pixels wide. The
+ * fixed width is stored at the default text size and grows with the zoom
+ * `scale` (`app/zoom.ts`), so it keeps holding about as many characters.
+ */
+export function wrapLayout(settings: WrapSettings, available: number, scale = 1): WrapLayout {
   const width = Math.max(0, Math.floor(available));
   if (settings.mode === "fixed") {
     const room = Math.max(0, width - 2 * MIN_MARGIN);
-    const text = Math.min(Math.max(settings.width, MIN_TEXT), room);
+    const text = Math.min(Math.max(Math.round(settings.width * scale), MIN_TEXT), room);
     return { margin: Math.floor((width - text) / 2), text };
   }
   const margin = Math.min(clamp(settings.margin, MIN_MARGIN, maxMargin(width)), width / 2);
@@ -41,16 +45,22 @@ export function wrapLayout(settings: WrapSettings, available: number): WrapLayou
 /**
  * Settings after dragging the bar so each margin is `margin` pixels: full
  * width keeps the margins, fixed width keeps the resulting text width.
- * Wrapping off has no column to drag.
+ * Wrapping off has no column to drag. The fixed width is stored unscaled
+ * (see `wrapLayout`).
  */
-export function dragTo(settings: WrapSettings, available: number, margin: number): WrapSettings {
+export function dragTo(
+  settings: WrapSettings,
+  available: number,
+  margin: number,
+  scale = 1,
+): WrapSettings {
   const width = Math.floor(available);
   const kept = Math.round(clamp(margin, MIN_MARGIN, maxMargin(width)));
   switch (settings.mode) {
     case "full":
       return { ...settings, margin: kept };
     case "fixed":
-      return { ...settings, width: Math.max(MIN_TEXT, width - 2 * kept) };
+      return { ...settings, width: Math.round(Math.max(MIN_TEXT, width - 2 * kept) / scale) };
     case "off":
       return settings;
   }

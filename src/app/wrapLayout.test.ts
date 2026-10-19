@@ -37,6 +37,21 @@ describe("wrapLayout", () => {
   });
 });
 
+describe("zoom scale", () => {
+  it("grows the fixed width with the text size, still within the window", () => {
+    expect(wrapLayout(FIXED, 2400, 1.5)).toEqual({ margin: 576, text: 1248 });
+    expect(wrapLayout(FIXED, 1000, 1.5).text).toBe(1000 - 2 * MIN_MARGIN);
+  });
+
+  it("leaves full width margins alone", () => {
+    expect(wrapLayout(FULL, 2400, 2)).toEqual(wrapLayout(FULL, 2400));
+  });
+
+  it("stores a dragged fixed width at the default size", () => {
+    expect(dragTo(FIXED, 2400, 576, 1.5).width).toBe(832);
+  });
+});
+
 describe("dragTo", () => {
   it("changes the margin in full width", () => {
     expect(dragTo(FULL, 2000, 300)).toEqual({ ...FULL, margin: 300 });

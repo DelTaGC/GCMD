@@ -1,7 +1,7 @@
 {
   "name": "gcmd",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "GCMD - a lightweight single-document GitHub Flavored Markdown editor",
   "license": "GPL-3.0-or-later WITH AdditionRef-GCMD-elkjs-exception",
   "author": "Gaetan Cretton",

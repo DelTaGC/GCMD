@@ -23,6 +23,8 @@ export interface WrapController {
   readonly bar: WrapBar;
   readonly settings: WrapSettings;
   setMode(mode: WrapMode): void;
+  /** The zoom scale the fixed width grows with (`app/zoom.ts`). */
+  setScale(scale: number): void;
   /** Re-applies the layout (after a document load replaced the editor state). */
   refresh(): void;
 }
@@ -32,6 +34,7 @@ const HINT = "Drag to resize the text column, double-click to change the wrap mo
 export function createWrapController(deps: WrapControllerDeps): WrapController {
   const { view } = deps;
   let settings: WrapSettings = { ...deps.initial };
+  let scale = 1;
 
   const available = (): number => view.scrollDOM.clientWidth;
 
@@ -42,7 +45,7 @@ export function createWrapController(deps: WrapControllerDeps): WrapController {
   };
 
   const apply = (): void => {
-    const layout = wrapLayout(settings, available());
+    const layout = wrapLayout(settings, available(), scale);
     setEditorWrap(view, settings.mode !== "off", layout.margin);
     bar.update({
       mode: settings.mode,
@@ -60,7 +63,7 @@ export function createWrapController(deps: WrapControllerDeps): WrapController {
 
   const bar = createWrapBar({
     onDrag: (margin) => {
-      settings = dragTo(settings, available(), margin);
+      settings = dragTo(settings, available(), margin, scale);
       apply();
     },
     onDragEnd: save,
@@ -97,6 +100,12 @@ export function createWrapController(deps: WrapControllerDeps): WrapController {
       return settings;
     },
     setMode,
+    setScale: (next) => {
+      if (next !== scale) {
+        scale = next;
+        apply();
+      }
+    },
     refresh: apply,
   };
 }

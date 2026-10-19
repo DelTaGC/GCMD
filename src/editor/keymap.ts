@@ -86,6 +86,12 @@ export const shortcuts: readonly Shortcut[] = [
   { key: "Escape", command: "edit.escape" },
   // View (registered by app/session.ts)
   { key: "Mod-Shift-l", command: "view.toggleSidebar" },
+  // Zoom (registered by app/zoom.ts). Bound by character, so Ctrl++ works on
+  // any layout (Shift+1 on Swiss-French, the numpad, Ctrl+= on US); no
+  // native accelerator (menu.rs). Reset has no key: Ctrl+0 is Paragraph.
+  { key: "Mod-+", command: "view.zoom.in" },
+  { key: "Mod-=", command: "view.zoom.in" },
+  { key: "Mod--", command: "view.zoom.out" },
   // Search
   { key: "Mod-f", command: "search.find" },
   { key: "Mod-h", command: "search.replace" },
@@ -135,7 +141,7 @@ export function baseBindings(): KeyBinding[] {
 /** Human-readable form of a CodeMirror key name (`Mod-Shift-x` -> `Ctrl+Shift+X`). */
 export function formatKey(key: string): string {
   return key
-    .split("-")
+    .split(/-(?!$)/)
     .map((part) => {
       switch (part) {
         case "Mod":

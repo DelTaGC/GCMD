@@ -1,6 +1,6 @@
 [package]
 name = "gcmd"
-version = "0.2.1"
+version = "0.2.2"
 description = "GCMD - a lightweight single-document GitHub Flavored Markdown editor"
 authors = ["Gaetan Cretton"]
 license = "GPL-3.0-or-later WITH AdditionRef-GCMD-elkjs-exception"

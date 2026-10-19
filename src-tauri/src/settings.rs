@@ -16,6 +16,12 @@ use crate::error::AppError;
 pub const SCHEMA_VERSION: u32 = 1;
 /// Maximum number of entries kept in the recent-files list.
 pub const MAX_RECENT_FILES: usize = 10;
+/// Default editor text size, in CSS pixels.
+pub const DEFAULT_FONT_SIZE: u32 = 16;
+/// Smallest editor text size View > Zoom can set.
+pub const MIN_FONT_SIZE: u32 = 8;
+/// Largest editor text size View > Zoom can set.
+pub const MAX_FONT_SIZE: u32 = 72;
 
 /// Color theme preference.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -104,6 +110,9 @@ pub struct Settings {
     pub updates: UpdateSettings,
     /// Line wrap preferences (added without a schema bump, like `updates`).
     pub wrap: WrapSettings,
+    /// Editor text size in CSS pixels (View > Zoom; added without a schema
+    /// bump). The frontend scales the whole document from it.
+    pub font_size: u32,
     /// Keys from newer or unknown versions, preserved verbatim so an update never drops a user's data.
     #[serde(flatten)]
     pub extra: serde_json::Map<String, serde_json::Value>,
@@ -118,6 +127,7 @@ impl Default for Settings {
             sidebar_visible: false,
             updates: UpdateSettings::default(),
             wrap: WrapSettings::default(),
+            font_size: DEFAULT_FONT_SIZE,
             extra: serde_json::Map::new(),
         }
     }
@@ -151,6 +161,12 @@ impl Settings {
     }
 }
 
+/// Keeps an editor text size inside [`MIN_FONT_SIZE`, `MAX_FONT_SIZE`].
+#[must_use]
+pub fn clamp_font_size(size: u32) -> u32 {
+    size.clamp(MIN_FONT_SIZE, MAX_FONT_SIZE)
+}
+
 /// Brings settings read from disk up to the current schema.
 ///
 /// Future migrations go here: match on `settings.schema_version` and step the
@@ -161,6 +177,8 @@ fn migrate(mut settings: Settings) -> Settings {
         // Files written before versioning existed are treated as v1.
         settings.schema_version = SCHEMA_VERSION;
     }
+    // A hand-edited size outside the range would make the text unusable.
+    settings.font_size = clamp_font_size(settings.font_size);
     settings
 }
 
@@ -232,6 +250,18 @@ mod tests {
         assert_eq!(
             value["wrap"],
             serde_json::json!({"mode": "full", "width": 832, "margin": 40})
+        );
+        assert_eq!(value["fontSize"], 16);
+    }
+
+    #[test]
+    fn parse_reads_font_size_and_clamps_it() {
+        assert_eq!(parse(r#"{"fontSize":20}"#).unwrap().font_size, 20);
+        assert_eq!(parse("{}").unwrap().font_size, DEFAULT_FONT_SIZE);
+        assert_eq!(parse(r#"{"fontSize":1}"#).unwrap().font_size, MIN_FONT_SIZE);
+        assert_eq!(
+            parse(r#"{"fontSize":500}"#).unwrap().font_size,
+            MAX_FONT_SIZE
         );
     }
 

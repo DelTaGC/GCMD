@@ -41,8 +41,11 @@ is not OS integration belongs in the TypeScript frontend.
 - Menus: accelerators use `CmdOrCtrl` and mirror `src/editor/keymap.ts`
   (a frontend test parses `menu.rs`, so write them as `Some("...")` literals
   next to the command id, or as a named constant when the key is menu-only
-  like Exit). macOS gets the application menu and the predefined Edit items
-  in `menu.rs`; keep every `cfg!(target_os)` branch there.
+  like Exit). Zoom items have no accelerator: muda binds accelerators to
+  physical US key positions, which are dead keys on Swiss-French (see
+  `zoom_submenu`); the keymap binds zoom by character. macOS gets the
+  application menu and the predefined Edit items in `menu.rs`; keep every
+  `cfg!(target_os)` branch there.
 - `rust-version` in `Cargo.toml` is also what the cargo resolver uses to pick
   dependency versions; keep it at the oldest toolchain that compiles the
   code (let chains need 1.88). When `tauri build` reports mismatched npm and

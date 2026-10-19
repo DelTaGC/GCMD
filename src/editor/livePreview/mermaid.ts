@@ -68,12 +68,26 @@ export class MermaidWidget extends WidgetType {
   }
 }
 
+/**
+ * Mermaid caps a diagram at its natural width in pixels, drawn with its own
+ * 16px text. Scaling that cap with the editor text size (`editor/zoom.ts`)
+ * makes diagrams zoom with the document, still never wider than the column.
+ */
+function zoomWithText(wrapper: HTMLElement): void {
+  const svg = wrapper.querySelector("svg");
+  const natural = /^(\d+(?:\.\d+)?)px$/.exec(svg?.style.maxWidth ?? "")?.[1];
+  if (svg && natural !== undefined) {
+    svg.style.maxWidth = `calc(${natural} * var(--editor-font-size) / 16)`;
+  }
+}
+
 function fill(wrapper: HTMLElement, result: MermaidResult): void {
   wrapper.textContent = "";
   wrapper.classList.toggle("cm-mermaid-error", result.error !== undefined);
   if (result.svg !== undefined) {
     // Mermaid sanitizes its output (securityLevel "strict") before returning it.
     wrapper.innerHTML = result.svg;
+    zoomWithText(wrapper);
     return;
   }
   const label = document.createElement("div");

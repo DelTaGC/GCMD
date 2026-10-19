@@ -215,6 +215,15 @@ fn set_wrap<R: Runtime>(
 }
 
 #[tauri::command]
+fn set_font_size<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    size: u32,
+) -> Result<Settings, AppError> {
+    state.update(&app, |s| s.font_size = settings::clamp_font_size(size))
+}
+
+#[tauri::command]
 fn add_recent_file<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, AppState>,
@@ -431,6 +440,7 @@ pub fn run() {
             set_theme,
             set_sidebar_visible,
             set_wrap,
+            set_font_size,
             add_recent_file,
             remove_recent_file,
             clear_recent_files,
