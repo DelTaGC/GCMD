@@ -259,6 +259,37 @@ describe("insertColumnLeft / insertColumnRight / deleteColumn", () => {
   });
 });
 
+describe("compact tables", () => {
+  // Pipes in different columns on every row: written compact, kept compact.
+  const COMPACT = "| Step | Action |\n|---|---|\n| 1 | Compute |\n| 10 | Run |";
+
+  it("inserts rows and columns without padding the table", () => {
+    const row = apply(insertRowBelow, COMPACT, 40);
+    expect(row.doc).toBe(
+      lines("| Step | Action |", "|---|---|", "| 1 | Compute |", "|  |  |", "| 10 | Run |"),
+    );
+    expect(row.head).toBe(49);
+    const column = apply(insertColumnRight, COMPACT, 2);
+    expect(column.doc).toBe(
+      lines("| Step |  | Action |", "|---|---|---|", "| 1 |  | Compute |", "| 10 |  | Run |"),
+    );
+    expect(column.head).toBe(9);
+  });
+
+  it("appends a compact empty row from the last cell", () => {
+    const r = apply(nextCell, COMPACT, COMPACT.length - 3);
+    expect(r.doc).toBe(`${COMPACT}\n|  |  |`);
+    expect(r.head).toBe(COMPACT.length + 3);
+  });
+
+  it("still aligns on the explicit command", () => {
+    const r = apply(alignTable, COMPACT, 2);
+    expect(r.doc).toBe(
+      lines("| Step | Action  |", "| ---- | ------- |", "| 1    | Compute |", "| 10   | Run     |"),
+    );
+  });
+});
+
 describe("moveColumnLeft / moveColumnRight", () => {
   it("swaps with the neighbour and follows the column, keeping the offset", () => {
     const r = apply(moveColumnRight, TABLE, 3);

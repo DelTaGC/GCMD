@@ -6,9 +6,10 @@
  * the cursor into that cell's source, which makes the table active.
  *
  * Active: the raw rows show in a monospace font with muted pipes so the
- * columns line up while typing. When the selection leaves a table whose text
- * was edited while it was active, the pipes are realigned by one undoable
- * transaction (`alignTable`); a table that was only visited is left alone.
+ * columns line up while typing. When the selection leaves an aligned table
+ * (`isAligned`) whose text was edited while it was active, the pipes are
+ * realigned by one undoable transaction (`alignTable`); a table that was
+ * only visited, or that is written compact, is left alone.
  * Tab / Shift+Tab move between cells (`commands/table.ts`).
  */
 import type { EditorState, Extension } from "@codemirror/state";
@@ -26,7 +27,14 @@ import {
   type NodeVisitor,
 } from "./decorate";
 import { renderInline } from "./inlineDom";
-import { cellAt, tableModel, type Align, type TableModel, type TableRow } from "./tableModel";
+import {
+  cellAt,
+  isAligned,
+  tableModel,
+  type Align,
+  type TableModel,
+  type TableRow,
+} from "./tableModel";
 
 /** Cell content ready for rendering; offsets are relative to the table start. */
 interface CellView {
@@ -465,7 +473,8 @@ const alignOnExit = ViewPlugin.fromClass(
       const left = previous && this.edited ? tableAt(update.state, previousFrom) : null;
       this.current = next;
       this.edited = false;
-      if (left) {
+      // A compact table stays compact: padding it would rewrite every row.
+      if (left && isAligned(left)) {
         const change = alignTableChange(update.state, left);
         if (change) {
           const view = update.view;

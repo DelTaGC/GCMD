@@ -406,6 +406,11 @@
   text-align: left;
   vertical-align: top;
   cursor: text;
+  /* The editor's line wrapping sets overflow-wrap: anywhere, which lets the
+     table layout shrink a column below its longest word ("10" drawn as "1"
+     over "0"). Words stay whole; a table too wide scrolls instead. */
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 .cm-table-widget th {
   font-weight: 650;

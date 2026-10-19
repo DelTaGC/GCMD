@@ -8,7 +8,10 @@ import {
   cellRange,
   displayWidth,
   emptyRow,
+  formatGrid,
   formatTable,
+  gridOf,
+  isAligned,
   splitCells,
   tableModel,
   type TableModel,
@@ -138,6 +141,49 @@ describe("formatTable", () => {
   it("builds an empty row with the table's widths and prefix", () => {
     const { model } = modelOf("  | ab | c |\n  |----|---|\n  | 1 | 2 |");
     expect(emptyRow(model)).toBe("  |     |     |");
+  });
+
+  it("builds a compact empty row for a compact table", () => {
+    const { model } = modelOf("| Step | Action |\n|---|---|\n| 1 | Compute |\n| 10 | Run |");
+    expect(emptyRow(model)).toBe("|  |  |");
+  });
+});
+
+describe("isAligned", () => {
+  it("is true when most rows share their pipe columns, edited cells included", () => {
+    expect(isAligned(modelOf("| a   | b   |\n| --- | --- |\n| 1   | 2   |").model)).toBe(true);
+    // One cell being typed into does not change the style.
+    expect(isAligned(modelOf("| a   | b   |\n| --- | --- |\n| 1xx   | 2   |").model)).toBe(true);
+    expect(isAligned(modelOf("> | 日本 | 1   |\n> | ---- | --- |").model)).toBe(true);
+    // Short cells written compact line up by themselves.
+    expect(isAligned(modelOf("| a | b |\n|---|---|\n| 1 | 2 |").model)).toBe(true);
+  });
+
+  it("is false for a compact table, whatever its delimiter row", () => {
+    const rows = "| 1 | Compute the ID |\n| 2 | Enforce one client |\n| 10 | Run |";
+    expect(isAligned(modelOf(`| Step | Action |\n|---|---|\n${rows}`).model)).toBe(false);
+    expect(isAligned(modelOf(`| Step | Action |\n|----|---|\n${rows}`).model)).toBe(false);
+    expect(isAligned(modelOf("| Step | Action |\n|---|---|").model)).toBe(false);
+  });
+});
+
+describe("formatGrid", () => {
+  const { model } = modelOf("| Step | Action |\n|:--|--:|\n| 1 | Compute |\n| 10 |");
+
+  it("pads every cell to its column when aligned", () => {
+    expect(formatGrid(gridOf(model), "aligned").text).toBe(
+      "| Step |  Action |\n| :--- | ------: |\n| 1    | Compute |\n| 10   |         |",
+    );
+  });
+
+  it("keeps rows unpadded and the delimiter row tight when compact", () => {
+    const layout = formatGrid(gridOf(model), "compact");
+    expect(layout.text).toBe("| Step | Action |\n|:--|--:|\n| 1 | Compute |\n| 10 |  |");
+    expect(layout.cells).toEqual([
+      [2, 9],
+      [30, 34],
+      [46, 51],
+    ]);
   });
 });
 

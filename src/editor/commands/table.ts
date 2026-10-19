@@ -3,7 +3,8 @@
  * the structural edits (rows, columns, column alignment).
  *
  * Structural edits go through the grid (`tableModel.ts`): the table is
- * rebuilt from its cell texts and written back aligned in one undoable
+ * rebuilt from its cell texts and written back in its own style (aligned, or
+ * compact when it was not aligned, see `isAligned`) in one undoable
  * transaction, with the cursor placed in the cell that makes sense next.
  *
  * `alignTableChange` is also used by the live-preview table family to
@@ -23,11 +24,12 @@ import {
   alignChanges,
   cellAt,
   cellRange,
-  columnWidths,
   emptyRow,
+  emptyRowWidths,
   formatGrid,
   gridOf,
   tableModel,
+  tableStyle,
   type Align,
   type CellAddress,
   type Grid,
@@ -135,7 +137,7 @@ export const nextCell: StateCommand = ({ state, dispatch }) => {
 /** Appends an empty row and puts the cursor in its cell number `cell`. */
 function appendRow(state: EditorState, model: TableModel, cell: number): Transaction {
   const last = model.body[model.body.length - 1] ?? model.delimiter;
-  const widths = columnWidths(model);
+  const widths = emptyRowWidths(model);
   // `| ` then each earlier cell's padding and its ` | ` separator.
   const column = widths.slice(0, cell).reduce((sum, width) => sum + width + 3, 2);
   const cursor = model.to + 1 + last.prefix.length + column;
@@ -236,7 +238,7 @@ type GridEditor = (grid: Grid, at: CellAddress, offset: number) => GridEdit | nu
 
 /**
  * A command that rewrites the table at the cursor from an edited grid. The
- * whole table is replaced by its aligned source in one transaction; the
+ * whole table is replaced by its formatted source in one transaction; the
  * cursor lands in `edit.cursor`, clamped to that cell's content.
  */
 function gridCommand(edit: GridEditor): StateCommand {
@@ -256,7 +258,7 @@ function gridCommand(edit: GridEditor): StateCommand {
     if (!result) {
       return true;
     }
-    const layout = formatGrid(result.grid);
+    const layout = formatGrid(result.grid, tableStyle(model));
     if (layout.text === state.doc.sliceString(model.from, model.to)) {
       return true;
     }

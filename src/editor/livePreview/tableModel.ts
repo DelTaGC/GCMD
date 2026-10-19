@@ -229,26 +229,74 @@ export function columnWidths(model: TableModel): number[] {
   );
 }
 
+/** Display columns of the pipes that close each cell, relative to the row start. */
+function pipeColumns(row: TableRow): number[] {
+  const columns: number[] = [];
+  let pos = row.from;
+  let column = 0;
+  for (const cell of row.cells) {
+    // Between cells there are only pipes and spaces, one column each.
+    column += cell.from - pos + displayWidth(cell.text) + (cell.end - cell.to);
+    columns.push(column);
+    pos = cell.end;
+  }
+  return columns;
+}
+
+/**
+ * Whether the table is written aligned: at least half of its rows, the
+ * delimiter row included, put their pipes in the same columns. An aligned
+ * table keeps that majority while a few of its cells are being edited; a
+ * compact table (`|---|---|`, one space around each cell) has none. Edits
+ * keep the style: the realign on exit and the structural commands pad only
+ * aligned tables.
+ */
+export function isAligned(model: TableModel): boolean {
+  const rows = allRows(model);
+  const counts = new Map<string, number>();
+  let best = 0;
+  for (const row of rows) {
+    const key = pipeColumns(row).join(",");
+    const count = (counts.get(key) ?? 0) + 1;
+    counts.set(key, count);
+    best = Math.max(best, count);
+  }
+  return best >= 2 && best * 2 >= rows.length;
+}
+
+export type TableStyle = "aligned" | "compact";
+
+export function tableStyle(model: TableModel): TableStyle {
+  return isAligned(model) ? "aligned" : "compact";
+}
+
 interface RowLayout {
   readonly line: string;
   /** Offset in `line` of each cell's content (empty for the delimiter row). */
   readonly starts: readonly number[];
 }
 
+/**
+ * One row's source. Aligned: every cell padded to its column width.
+ * Compact: `widths` are the row's own cell widths, and the delimiter row is
+ * written without spaces (`|---|:-:|`).
+ */
 function layoutRow(
   prefix: string,
   kind: RowKind,
   cells: readonly string[],
   widths: readonly number[],
   aligns: readonly Align[],
+  style: TableStyle = "aligned",
 ): RowLayout {
   const columns = widths.length;
   const starts: number[] = [];
+  const space = style === "compact" && kind === "delimiter" ? "" : " ";
   let line = `${prefix}|`;
   for (let c = 0; c < columns; c += 1) {
     const width = widths[c] ?? 3;
     const align = aligns[c] ?? "none";
-    line += " ";
+    line += space;
     if (kind === "delimiter") {
       line += delimiterCell(width, align);
     } else {
@@ -257,7 +305,7 @@ function layoutRow(
       starts.push(line.length + padded.indexOf(text));
       line += padded;
     }
-    line += " |";
+    line += `${space}|`;
   }
   // Cells beyond the header width are not part of the GFM table but must
   // never be lost; they are appended as they were.
@@ -330,10 +378,17 @@ export interface GridLayout {
   readonly cells: readonly (readonly number[])[];
 }
 
-/** Formats a grid; the offsets let a command place the cursor in a cell. */
-export function formatGrid(grid: Grid): GridLayout {
+/**
+ * Formats a grid in the given style; the offsets let a command place the
+ * cursor in a cell.
+ */
+export function formatGrid(grid: Grid, style: TableStyle = "aligned"): GridLayout {
   const columns = grid.header.cells.length;
-  const widths = widthsOf(columns, [grid.header.cells, ...grid.body.map((row) => row.cells)]);
+  const aligned = widthsOf(columns, [grid.header.cells, ...grid.body.map((row) => row.cells)]);
+  const widthsFor = (cells: readonly string[]): readonly number[] =>
+    style === "aligned"
+      ? aligned
+      : Array.from({ length: columns }, (_, c) => displayWidth(cells[c] ?? ""));
   const lines: string[] = [];
   const cells: number[][] = [];
   let offset = 0;
@@ -343,13 +398,18 @@ export function formatGrid(grid: Grid): GridLayout {
     lines.push(line);
     offset += line.length + 1;
   };
+  const row = (prefix: string, kind: RowKind, rowCells: readonly string[]): RowLayout => {
+    const widths =
+      kind === "delimiter" && style === "compact" ? widthsOf(columns, []) : widthsFor(rowCells);
+    return layoutRow(prefix, kind, rowCells, widths, grid.aligns, style);
+  };
   const header = grid.header;
-  push(layoutRow(header.prefix, "header", header.cells, widths, grid.aligns), header.prefix.length);
-  const delimiter = layoutRow(grid.delimiterPrefix, "delimiter", [], widths, grid.aligns);
+  push(row(header.prefix, "header", header.cells), header.prefix.length);
+  const delimiter = row(grid.delimiterPrefix, "delimiter", []);
   lines.push(delimiter.line);
   offset += delimiter.line.length + 1;
-  for (const row of grid.body) {
-    push(layoutRow(row.prefix, "body", row.cells, widths, grid.aligns), 0);
+  for (const body of grid.body) {
+    push(row(body.prefix, "body", body.cells), 0);
   }
   return { text: lines.join("\n"), cells };
 }
@@ -403,9 +463,14 @@ export function alignChanges(model: TableModel): TextChange[] {
   return changes;
 }
 
+/** Widths of the cells of a new empty row: the column widths, or none when compact. */
+export function emptyRowWidths(model: TableModel): number[] {
+  return isAligned(model) ? columnWidths(model) : model.header.cells.map(() => 0);
+}
+
 /** Source of a new empty body row, with the prefix of the last row. */
 export function emptyRow(model: TableModel): string {
-  const widths = columnWidths(model);
+  const widths = emptyRowWidths(model);
   const last = model.body[model.body.length - 1] ?? model.delimiter;
   return `${last.prefix}| ${widths.map((w) => " ".repeat(w)).join(" | ")} |`;
 }

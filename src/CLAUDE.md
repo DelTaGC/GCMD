@@ -57,7 +57,10 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   overlap), dismissed by Escape until the cursor leaves that table. Its buttons run the `table.*` structural
   commands in `commands/table.ts`, which rebuild the table from a grid of
   cell texts (`tableModel.ts` `gridOf` / `formatGrid`) and write it back
-  aligned in one transaction.
+  in one transaction, in the table's own style: `isAligned` (most rows put
+  their pipes in the same columns) means padded, otherwise compact. The
+  realign on leaving an edited table (`livePreview/table.ts`) also skips
+  compact tables; only Shift+Alt+F converts one.
 - `editor/linkCompletion.ts` completes link destinations (ADR 0013): the
   only `autocompletion` source (HTML tag completion is overridden). It
   finds the destination from the line text, lists one folder at a time
