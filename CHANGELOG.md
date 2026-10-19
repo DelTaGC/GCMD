@@ -4,6 +4,10 @@ One section per release, newest first. The section of a version becomes the
 GitHub release text and the notes shown in the in-app update banner
 (`tools/release/notes.mjs`), so write it for users.
 
+## 0.2.1
+
+- Tables: narrow number columns no longer wrap "10" onto two lines; compact tables stay compact when edited.
+
 ## 0.2.0
 
 QoL update.
