@@ -7,6 +7,7 @@ GitHub release text and the notes shown in the in-app update banner
 ## Unreleased
 
 - Zoom: Ctrl+mouse wheel, Ctrl++ / Ctrl+- or View > Zoom change the text size; it is remembered.
+- Updates on Windows: after "Install and Restart", a file whose path contains spaces opens again instead of failing with "Could not open".
 
 ## 0.2.2
 

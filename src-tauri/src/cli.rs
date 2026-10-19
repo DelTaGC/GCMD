@@ -6,17 +6,40 @@ use std::path::{Path, PathBuf};
 /// First argument that does not start with `-` (so Tauri and dev flags are
 /// skipped), made absolute against `cwd` when relative. Empty arguments are
 /// skipped. Returns `None` when there is no such argument.
+///
+/// When that argument is not an existing file, the arguments after it are
+/// joined back with single spaces, shortest first, and the first join that
+/// names an existing file wins. The Windows updater relaunches the app
+/// through the NSIS installer, whose `${GetOptions} $CMDLINE "/ARGS"` strips
+/// the quotes the plugin put around the path, so `C:\My notes\a.md` arrives
+/// as `C:\My` and `notes\a.md`.
 pub fn file_argument<I: IntoIterator<Item = OsString>>(args: I, cwd: &Path) -> Option<PathBuf> {
-    args.into_iter()
-        .find(|arg| !arg.is_empty() && !arg.to_string_lossy().starts_with('-'))
-        .map(|arg| {
-            let path = PathBuf::from(arg);
-            if path.is_absolute() {
-                path
-            } else {
-                cwd.join(path)
-            }
-        })
+    let absolute = |arg: &OsString| {
+        let path = PathBuf::from(arg);
+        if path.is_absolute() {
+            path
+        } else {
+            cwd.join(path)
+        }
+    };
+    let mut args = args
+        .into_iter()
+        .skip_while(|arg| arg.is_empty() || arg.to_string_lossy().starts_with('-'));
+    let first = args.next()?;
+    let path = absolute(&first);
+    if path.is_file() {
+        return Some(path);
+    }
+    let mut joined = first;
+    for part in args {
+        joined.push(" ");
+        joined.push(part);
+        let candidate = absolute(&joined);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    Some(path)
 }
 
 /// Strips the Windows verbatim prefix: `\\?\C:\x` becomes `C:\x` and
@@ -130,6 +153,29 @@ mod tests {
         let abs = dir.path().join("a.md");
         let got = file_argument(vec![abs.clone().into_os_string()], Path::new("elsewhere"));
         assert_eq!(got, Some(abs));
+    }
+
+    #[test]
+    fn a_path_split_at_spaces_is_joined_back() {
+        // What the NSIS installer passes when it restarts the app after an update.
+        let dir = tempfile::tempdir().unwrap();
+        let folder = dir.path().join("Common documents").join("a - b");
+        std::fs::create_dir_all(&folder).unwrap();
+        let file = folder.join("Reading Notes.md");
+        std::fs::write(&file, "x").unwrap();
+        let full = file.to_string_lossy().into_owned();
+        let parts: Vec<OsString> = full.split(' ').map(OsString::from).collect();
+        assert!(parts.len() > 1);
+        assert_eq!(file_argument(parts, Path::new("elsewhere")), Some(file));
+    }
+
+    #[test]
+    fn a_missing_file_keeps_the_first_argument() {
+        let cwd = Path::new("base");
+        assert_eq!(
+            file_argument(os(&["missing.md", "other.md"]), cwd),
+            Some(cwd.join("missing.md"))
+        );
     }
 
     #[test]
