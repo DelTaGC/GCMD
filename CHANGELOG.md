@@ -4,8 +4,11 @@ One section per release, newest first. The section of a version becomes the
 GitHub release text and the notes shown in the in-app update banner
 (`tools/release/notes.mjs`), so write it for users.
 
-## Unreleased
+## 0.3.0
 
+- Settings: text style, keyboard shortcuts.
+- Spellchecking (OS/webkit tools)
+- CTRL-E now creates a code block instead of inline code id more than one line is selected.
 - Zoom: Ctrl+mouse wheel, Ctrl++ / Ctrl+- or View > Zoom change the text size; it is remembered.
 - Updates on Windows: after "Install and Restart", a file whose path contains spaces opens again instead of failing with "Could not open".
 
