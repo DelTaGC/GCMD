@@ -5,10 +5,19 @@ Single-document Markdown reader and editor following GitHub Flavored Markdown
 editor (TypeScript, vanilla DOM, Vite). Live preview over the raw text: the
 buffer _is_ the markdown; markup shows only in the block being edited.
 
-Roadmap and rationale: `PLAN.md`. Decisions: `docs/decisions/`. Budgets and
+Roadmap and rationale: `PLAN.md` (LLM features are Phase 8, to be designed). Decisions: `docs/decisions/`. Budgets and
 measurements: `docs/perf.md`. Parser deviations: `docs/known-deviations.md`.
 Releases and updates: `docs/release.md`.
 Area-specific rules: `src/CLAUDE.md` (frontend), `src-tauri/CLAUDE.md` (Rust).
+
+## Session start: check for upstream commits first
+
+Before any other work in a session, run `git fetch origin` and then
+`git log --oneline HEAD..@{u}`. If that lists commits (the user also
+works from other machines), stop: tell the user how many commits are
+waiting and what they are, and wait for them to decide before editing,
+pulling or committing anything. Never pull, merge or rebase on your own.
+Working on an out-of-date checkout leads to rebase conflicts later.
 
 ## Non-goals
 

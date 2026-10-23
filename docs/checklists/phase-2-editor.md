@@ -32,7 +32,7 @@ and again after switching the theme (View > Theme).
 - [ ] Task items show a checkbox; clicking it toggles `[ ]`/`[x]` in the text without moving the cursor; done tasks are struck through.
 - [ ] Blockquotes have a left border and hide their `>` markers; the active line shows them.
 - [ ] `---`, `***`, `___` render as rules; the active line shows the characters.
-- [ ] Fenced code shows a language label instead of the opening fence, highlighted code (ts, python, rust, json, bash), and no closing fence; the active block shows both fences.
+- [ ] Fenced code shows a language label instead of the opening fence, highlighted code (ts, python, rust, json, bash), and no closing fence (the background ends with the last code line, no empty line below it); the active block shows both fences.
 - [ ] Indented code blocks use the monospace background.
 - [ ] Tables and mermaid blocks render as widgets (see phase-3-blocks.md); the active block shows raw text in monospace.
 - [ ] Escapes like `\*` hide the backslash off-line.
@@ -42,6 +42,7 @@ and again after switching the theme (View > Theme).
 ## Editing
 
 - [ ] Ctrl+B / Ctrl+I / Ctrl+E / Ctrl+Shift+X toggle bold / italic / inline code / strikethrough on a selection, on the word at the cursor, and back off.
+- [ ] Ctrl+E on a selection spanning several lines wraps those whole lines in a fenced code block (cursor after the opening fence, ready for a language); Ctrl+E on a multi-line selection inside a fence removes both fences.
 - [ ] Ctrl+K wraps the selection as a link; with a URL selected it becomes the destination.
 - [ ] Ctrl+1..6 set the heading level; Ctrl+0 removes it.
 - [ ] Ctrl+D duplicates the line; Alt+Up/Down move it; Shift+Alt+Up/Down copy it; Ctrl+Shift+K deletes it.

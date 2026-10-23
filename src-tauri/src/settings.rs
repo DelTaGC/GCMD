@@ -4,6 +4,7 @@
 //! Keys this version does not know are kept verbatim in [`Settings::extra`]
 //! so a newer or older build never drops user data.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
@@ -93,6 +94,123 @@ impl Default for WrapSettings {
     }
 }
 
+/// Fonts, code size, line height and colors (Phase 7 settings panel). Empty
+/// font names and absent colors mean the built-in defaults in
+/// `src/styles.css`. The text size itself is [`Settings::font_size`] (View >
+/// Zoom), which the panel also edits.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct AppearanceSettings {
+    /// CSS font-family list for the text; empty for the system UI font.
+    pub text_font: String,
+    /// CSS font-family list for code; empty for the default monospace stack.
+    pub code_font: String,
+    /// Code size in percent of the text size.
+    pub code_font_scale: u32,
+    /// Line height in percent of the font size.
+    pub line_height: u32,
+    /// Color overrides for the light theme: CSS variable name without the
+    /// leading dashes (`bg`, `link`...) to `#rrggbb`.
+    pub light_colors: BTreeMap<String, String>,
+    /// Color overrides for the dark theme, same shape as `light_colors`.
+    pub dark_colors: BTreeMap<String, String>,
+}
+
+/// Limits enforced by [`AppearanceSettings::sanitized`].
+pub const CODE_FONT_SCALE_RANGE: (u32, u32) = (50, 150);
+pub const LINE_HEIGHT_RANGE: (u32, u32) = (100, 250);
+const MAX_FONT_NAME: usize = 200;
+
+impl Default for AppearanceSettings {
+    fn default() -> Self {
+        Self {
+            text_font: String::new(),
+            code_font: String::new(),
+            code_font_scale: 90,
+            line_height: 160,
+            light_colors: BTreeMap::new(),
+            dark_colors: BTreeMap::new(),
+        }
+    }
+}
+
+fn is_hex_color(value: &str) -> bool {
+    value.len() == 7 && value.starts_with('#') && value[1..].chars().all(|c| c.is_ascii_hexdigit())
+}
+
+fn is_color_key(key: &str) -> bool {
+    !key.is_empty()
+        && key.len() <= 40
+        && key
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+}
+
+fn sanitize_font(name: &str) -> String {
+    name.chars()
+        .filter(|c| !matches!(c, ';' | '{' | '}' | '<' | '>' | '\\') && !c.is_control())
+        .take(MAX_FONT_NAME)
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
+
+fn sanitize_colors(colors: &BTreeMap<String, String>) -> BTreeMap<String, String> {
+    colors
+        .iter()
+        .filter(|(k, v)| is_color_key(k) && is_hex_color(v))
+        .map(|(k, v)| (k.clone(), v.to_ascii_lowercase()))
+        .collect()
+}
+
+impl AppearanceSettings {
+    /// Clamps sizes, drops invalid colors and strips characters that could
+    /// break out of a CSS value from the font names.
+    #[must_use]
+    pub fn sanitized(&self) -> Self {
+        Self {
+            text_font: sanitize_font(&self.text_font),
+            code_font: sanitize_font(&self.code_font),
+            code_font_scale: self
+                .code_font_scale
+                .clamp(CODE_FONT_SCALE_RANGE.0, CODE_FONT_SCALE_RANGE.1),
+            line_height: self
+                .line_height
+                .clamp(LINE_HEIGHT_RANGE.0, LINE_HEIGHT_RANGE.1),
+            light_colors: sanitize_colors(&self.light_colors),
+            dark_colors: sanitize_colors(&self.dark_colors),
+        }
+    }
+}
+
+/// Keymap overrides: command id to the keys that replace its default
+/// shortcuts (`CodeMirror` key names such as `Mod-Shift-x`). An empty list
+/// unbinds the command; commands not listed keep their defaults.
+pub type KeymapOverrides = BTreeMap<String, Vec<String>>;
+
+/// Keeps well-formed entries only: a command id like `format.strong` and key
+/// names without whitespace.
+#[must_use]
+pub fn sanitize_keymap(keymap: &KeymapOverrides) -> KeymapOverrides {
+    let id_ok = |id: &str| {
+        id.contains('.')
+            && id.len() <= 80
+            && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '.')
+    };
+    keymap
+        .iter()
+        .filter(|(id, _)| id_ok(id))
+        .map(|(id, keys)| {
+            let keys = keys
+                .iter()
+                .filter(|k| !k.is_empty() && k.len() <= 40 && !k.chars().any(char::is_whitespace))
+                .cloned()
+                .collect();
+            (id.clone(), keys)
+        })
+        .collect()
+}
+
 /// Persisted user settings.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -113,6 +231,12 @@ pub struct Settings {
     /// Editor text size in CSS pixels (View > Zoom; added without a schema
     /// bump). The frontend scales the whole document from it.
     pub font_size: u32,
+    /// Fonts, sizes and colors (added without a schema bump, like `updates`).
+    pub appearance: AppearanceSettings,
+    /// Keymap overrides by command id (added without a schema bump).
+    pub keymap: KeymapOverrides,
+    /// Native webview spell-check in the editor (added without a schema bump).
+    pub spellcheck: bool,
     /// Keys from newer or unknown versions, preserved verbatim so an update never drops a user's data.
     #[serde(flatten)]
     pub extra: serde_json::Map<String, serde_json::Value>,
@@ -128,6 +252,9 @@ impl Default for Settings {
             updates: UpdateSettings::default(),
             wrap: WrapSettings::default(),
             font_size: DEFAULT_FONT_SIZE,
+            appearance: AppearanceSettings::default(),
+            keymap: KeymapOverrides::new(),
+            spellcheck: true,
             extra: serde_json::Map::new(),
         }
     }
@@ -217,6 +344,23 @@ pub fn load_or_recover(path: &Path) -> Settings {
             Settings::default()
         }
     }
+}
+
+/// Applies `mutate` to the settings currently on disk at `path`, or to
+/// `fallback` (this process's copy) when the file is missing or unreadable.
+/// Every GCMD window is its own process with its own copy, so starting from
+/// the file keeps what other windows saved since this one started.
+pub fn merge_change(
+    path: &Path,
+    fallback: &Settings,
+    mutate: impl FnOnce(&mut Settings),
+) -> Settings {
+    let mut current = match load(path) {
+        Ok(on_disk) if path.exists() => on_disk,
+        _ => fallback.clone(),
+    };
+    mutate(&mut current);
+    current
 }
 
 /// Saves settings as pretty JSON with a trailing newline, creating parent
@@ -424,5 +568,96 @@ mod tests {
         let path = dir.path().join("settings.json");
         fs::write(&path, "not json").unwrap();
         assert!(matches!(load(&path), Err(AppError::Settings(_))));
+    }
+
+    #[test]
+    fn merge_change_starts_from_the_file_on_disk() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        // This process started with the defaults; another window then saved
+        // a dark theme.
+        let ours = Settings::default();
+        let theirs = Settings {
+            theme: Theme::Dark,
+            ..Settings::default()
+        };
+        save(&path, &theirs).unwrap();
+        let merged = merge_change(&path, &ours, |s| s.sidebar_visible = true);
+        assert_eq!(merged.theme, Theme::Dark);
+        assert!(merged.sidebar_visible);
+    }
+
+    #[test]
+    fn merge_change_falls_back_without_a_readable_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        let ours = Settings {
+            theme: Theme::Light,
+            ..Settings::default()
+        };
+        assert_eq!(merge_change(&path, &ours, |_| {}).theme, Theme::Light);
+        fs::write(&path, "not json").unwrap();
+        assert_eq!(merge_change(&path, &ours, |_| {}).theme, Theme::Light);
+    }
+
+    #[test]
+    fn phase_7_fields_default_when_missing() {
+        let s = parse(r#"{"schemaVersion":1}"#).unwrap();
+        assert_eq!(s.appearance, AppearanceSettings::default());
+        assert!(s.keymap.is_empty());
+        assert!(s.spellcheck);
+        let value = serde_json::to_value(Settings::default()).unwrap();
+        assert_eq!(value["appearance"]["codeFontScale"], 90);
+        assert_eq!(value["appearance"]["lightColors"], serde_json::json!({}));
+        assert_eq!(value["keymap"], serde_json::json!({}));
+        assert_eq!(value["spellcheck"], true);
+    }
+
+    #[test]
+    fn parse_reads_appearance_keymap_and_spellcheck() {
+        let json = r##"{"appearance":{"textFont":"Georgia","lineHeight":180,"darkColors":{"bg":"#000000"}},
+            "keymap":{"format.strong":["Mod-Shift-b"],"line.delete":[]},"spellcheck":false}"##;
+        let s = parse(json).unwrap();
+        assert_eq!(s.appearance.text_font, "Georgia");
+        assert_eq!(s.appearance.line_height, 180);
+        assert_eq!(s.appearance.code_font_scale, 90);
+        assert_eq!(s.appearance.dark_colors["bg"], "#000000");
+        assert_eq!(s.keymap["format.strong"], ["Mod-Shift-b"]);
+        assert_eq!(s.keymap["line.delete"], Vec::<String>::new());
+        assert!(!s.spellcheck);
+    }
+
+    #[test]
+    fn appearance_sanitized_clamps_and_filters() {
+        let mut a = AppearanceSettings {
+            text_font: "Evil; } body { color: red".into(),
+            code_font_scale: 1,
+            line_height: 120,
+            ..AppearanceSettings::default()
+        };
+        a.light_colors.insert("bg".into(), "#ABCDEF".into());
+        a.light_colors.insert("fg".into(), "red".into());
+        a.light_colors.insert("Bad Key".into(), "#000000".into());
+        let s = a.sanitized();
+        assert_eq!(s.text_font, "Evil  body  color: red");
+        assert_eq!(s.code_font_scale, CODE_FONT_SCALE_RANGE.0);
+        assert_eq!(s.line_height, 120);
+        assert_eq!(s.light_colors.len(), 1);
+        assert_eq!(s.light_colors["bg"], "#abcdef");
+    }
+
+    #[test]
+    fn sanitize_keymap_drops_malformed_entries() {
+        let mut k = KeymapOverrides::new();
+        k.insert(
+            "format.strong".into(),
+            vec!["Mod-b".into(), "has space".into(), String::new()],
+        );
+        k.insert("nodot".into(), vec!["Mod-x".into()]);
+        k.insert("line.delete".into(), vec![]);
+        let s = sanitize_keymap(&k);
+        assert_eq!(s.len(), 2);
+        assert_eq!(s["format.strong"], ["Mod-b"]);
+        assert_eq!(s["line.delete"], Vec::<String>::new());
     }
 }

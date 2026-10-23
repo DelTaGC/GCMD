@@ -70,6 +70,17 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   their pipes in the same columns) means padded, otherwise compact. The
   realign on leaving an edited table (`livePreview/table.ts`) also skips
   compact tables; only Shift+Alt+F converts one.
+- `app/settings.ts` owns the Phase 7 settings (ADR 0014): appearance
+  (`app/appearance.ts` writes CSS variables into one `<style>`), keymap
+  overrides (`editor/keymap.ts` `setKeymapOverrides` reconfigures the
+  keymap compartment; `editor/keymapEdit.ts` and `editor/keyRecord.ts` are
+  the pure editing and key-recording rules) and spell-check
+  (`editor/spellcheck.ts` compartment, carried by `replaceDocument`;
+  `livePreview/spelling.ts` marks code and URLs `spellcheck="false"`). It
+  registers `file.settings` and draws `chrome/settings/panel.ts`. Native
+  menu events pass through `interceptMenu` first so a shortcut being
+  recorded is not swallowed by a menu accelerator. `shortcutLabel` and
+  `keysFor` read the keys in effect, never the default table.
 - `editor/linkCompletion.ts` completes link destinations (ADR 0013): the
   only `autocompletion` source (HTML tag completion is overridden). It
   finds the destination from the line text, lists one folder at a time

@@ -11,7 +11,7 @@ use tauri::menu::{
 };
 use tauri::{AppHandle, LogicalPosition, Runtime, Window};
 
-use crate::settings::{Settings, Theme, UpdateCheck, WrapMode};
+use crate::settings::{KeymapOverrides, Settings, Theme, UpdateCheck, WrapMode};
 
 /// Prefix of recent-file item ids; the rest is the path.
 pub const RECENT_PREFIX: &str = "recent:";
@@ -87,6 +87,8 @@ fn app_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resul
             &item(app, "help.checkUpdates", "Check for Updates...", None)?,
             &auto_update_item(app, settings)?,
             &PredefinedMenuItem::separator(app)?,
+            &item(app, "file.settings", "Settings...", Some("CmdOrCtrl+,"))?,
+            &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::services(app, None)?,
             &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::hide(app, None)?,
@@ -119,9 +121,11 @@ fn file_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
             &item(app, "file.saveAs", "Save &As...", Some("CmdOrCtrl+Shift+S"))?,
         ],
     )?;
-    // On macOS, Quit lives in the application menu.
+    // On macOS, Settings and Quit live in the application menu.
     if !cfg!(target_os = "macos") {
         submenu.append_items(&[
+            &PredefinedMenuItem::separator(app)?,
+            &item(app, "file.settings", "Se&ttings...", Some("CmdOrCtrl+,"))?,
             &PredefinedMenuItem::separator(app)?,
             &item(app, "file.exit", "E&xit", EXIT_ACCELERATOR)?,
         ])?;
@@ -140,7 +144,7 @@ fn format_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
             &item(
                 app,
                 "format.inlineCode",
-                "Inline &Code",
+                "&Code (Inline or Block)",
                 Some("CmdOrCtrl+E"),
             )?,
             &item(
@@ -445,6 +449,92 @@ pub fn popup_top_level<R: Runtime>(
 
 /// Builds and installs the menu as the application menu.
 pub fn install<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Result<()> {
-    app.set_menu(build(app, settings)?)?;
+    let menu = build(app, settings)?;
+    for kind in menu.items()? {
+        apply_keymap(&kind, &settings.keymap);
+    }
+    app.set_menu(menu)?;
     Ok(())
+}
+
+/// Converts a `CodeMirror` key name (`Mod-Shift-x`, `Alt-ArrowUp`, `Mod--`)
+/// to a menu accelerator (`CmdOrCtrl+Shift+X`, `Alt+Up`, `CmdOrCtrl+-`).
+#[must_use]
+pub fn key_to_accelerator(key: &str) -> String {
+    // A trailing `-` is the minus key itself, as in CodeMirror.
+    let (mods, last) = match key.strip_suffix("--") {
+        Some(rest) => (rest, "-"),
+        None if key == "-" => ("", "-"),
+        None => key.rsplit_once('-').unwrap_or(("", key)),
+    };
+    let mut parts: Vec<String> = mods
+        .split('-')
+        .filter(|m| !m.is_empty())
+        .map(|m| match m {
+            "Mod" => "CmdOrCtrl".to_string(),
+            "Meta" | "Cmd" => "Super".to_string(),
+            other => other.to_string(),
+        })
+        .collect();
+    parts.push(match last {
+        "ArrowUp" => "Up".to_string(),
+        "ArrowDown" => "Down".to_string(),
+        "ArrowLeft" => "Left".to_string(),
+        "ArrowRight" => "Right".to_string(),
+        k if k.chars().count() == 1 => k.to_uppercase(),
+        k => k.to_string(),
+    });
+    parts.join("+")
+}
+
+/// Replaces the accelerator of every item whose command the user rebound
+/// (`Settings::keymap`): the first key of the override, or none when the
+/// command was unbound. A key the menu cannot express leaves the item
+/// without an accelerator; the editor keymap still handles it.
+fn apply_keymap<R: Runtime>(kind: &MenuItemKind<R>, keymap: &KeymapOverrides) {
+    let accelerator = |id: &str| -> Option<Option<String>> {
+        keymap
+            .get(id)
+            .map(|keys| keys.first().map(|k| key_to_accelerator(k)))
+    };
+    match kind {
+        MenuItemKind::Submenu(submenu) => {
+            if let Ok(items) = submenu.items() {
+                for child in &items {
+                    apply_keymap(child, keymap);
+                }
+            }
+        }
+        MenuItemKind::MenuItem(item) => {
+            if let Some(next) = accelerator(item.id().as_ref())
+                && item.set_accelerator(next.as_deref()).is_err()
+            {
+                let _ = item.set_accelerator(None::<&str>);
+            }
+        }
+        MenuItemKind::Check(item) => {
+            if let Some(next) = accelerator(item.id().as_ref())
+                && item.set_accelerator(next.as_deref()).is_err()
+            {
+                let _ = item.set_accelerator(None::<&str>);
+            }
+        }
+        _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::key_to_accelerator;
+
+    #[test]
+    fn converts_codemirror_keys_to_accelerators() {
+        assert_eq!(key_to_accelerator("Mod-Shift-x"), "CmdOrCtrl+Shift+X");
+        assert_eq!(key_to_accelerator("Alt-ArrowUp"), "Alt+Up");
+        assert_eq!(key_to_accelerator("F3"), "F3");
+        assert_eq!(key_to_accelerator("Mod-Enter"), "CmdOrCtrl+Enter");
+        assert_eq!(key_to_accelerator("Mod-,"), "CmdOrCtrl+,");
+        assert_eq!(key_to_accelerator("Mod--"), "CmdOrCtrl+-");
+        assert_eq!(key_to_accelerator("Meta-k"), "Super+K");
+    }
 }

@@ -38,6 +38,7 @@ import {
   clearFormatting,
   insertLink,
   toggleEmphasis,
+  toggleCodeBlock,
   toggleInlineCode,
   toggleStrikethrough,
   toggleStrong,
@@ -97,7 +98,12 @@ function chain(...runners: CommandRunner[]): CommandRunner {
 export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "format.strong", title: "Bold", run: toggleStrong }),
   defineCommand({ id: "format.emphasis", title: "Italic", run: toggleEmphasis }),
-  defineCommand({ id: "format.inlineCode", title: "Inline code", run: toggleInlineCode }),
+  // Ctrl+E: a code block around a selection of several lines, inline code otherwise.
+  defineCommand({
+    id: "format.inlineCode",
+    title: "Code (inline, or block for several lines)",
+    run: chain(toggleCodeBlock, toggleInlineCode),
+  }),
   defineCommand({ id: "format.strikethrough", title: "Strikethrough", run: toggleStrikethrough }),
   defineCommand({ id: "format.link", title: "Insert link", run: insertLink }),
   defineCommand({

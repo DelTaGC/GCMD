@@ -18,6 +18,7 @@ import { visitHr } from "./hr";
 import { visitInline } from "./inline";
 import { toggleTaskMarkerAt, visitLists } from "./lists";
 import { visitMermaidBlocks } from "./mermaid";
+import { visitSpelling } from "./spelling";
 import { visitTable, visitTableBlocks } from "./table";
 
 type Visitor = Parameters<typeof computeFamily>[2];
@@ -205,19 +206,38 @@ describe("hr", () => {
   });
 });
 
+describe("spelling exclusions", () => {
+  it("marks code, URLs and autolinks per line and leaves prose alone", () => {
+    const doc = "Some `code` and <https://x.ch>\n\n```\nab\n```\n";
+    expect(kinds(run(visitSpelling, doc, 0))).toEqual([
+      "mark:cm-nospell@5-11",
+      "mark:cm-nospell@16-30",
+      "mark:cm-nospell@32-35",
+      "mark:cm-nospell@36-38",
+      "mark:cm-nospell@39-42",
+    ]);
+  });
+});
+
 describe("code fences", () => {
   const doc = "p\n\n```ts\nlet a = 1;\n```\n\nq";
   // Fence: 3..23; opening line 3..8, code line 9..19, closing line 20..23.
 
-  it("replaces both fence lines when inactive", () => {
+  it("replaces both fence lines and collapses the closing one when inactive", () => {
     const out = run(visitCodeFence, doc, 0);
     expect(kinds(out)).toEqual([
       "line:cm-code-line cm-code-first@3-3",
       "widget:LanguageSelectWidget@3-8",
-      "line:cm-code-line@9-9",
-      "line:cm-code-line cm-code-last@20-20",
+      "line:cm-code-line cm-code-last@9-9",
+      "line:cm-code-close@20-20",
       "widget:EmptyWidget@20-23",
     ]);
+  });
+
+  it("keeps the closing line of an empty fence as padding", () => {
+    const out = run(visitCodeFence, "p\n\n```\n```\n", 0);
+    expect(kinds(out)).toContain("line:cm-code-line cm-code-last@7-7");
+    expect(kinds(out).some((k) => k.includes("cm-code-close"))).toBe(false);
   });
 
   it("shows the fences when the selection is inside the block", () => {

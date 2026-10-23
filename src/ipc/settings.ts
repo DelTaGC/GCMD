@@ -24,6 +24,27 @@ export interface WrapSettings {
   margin: number;
 }
 
+/**
+ * Fonts, code size, line height and colors (`settings.rs`
+ * `AppearanceSettings`). The text size is `Settings.fontSize` (View > Zoom).
+ */
+export interface AppearanceSettings {
+  /** CSS font-family list for the text; empty for the default. */
+  textFont: string;
+  /** CSS font-family list for code; empty for the default. */
+  codeFont: string;
+  /** Code size in percent of the text size. */
+  codeFontScale: number;
+  /** Line height in percent of the font size. */
+  lineHeight: number;
+  /** Color overrides by CSS variable name without dashes, `#rrggbb`. */
+  lightColors: Record<string, string>;
+  darkColors: Record<string, string>;
+}
+
+/** Keymap overrides: command id -> keys replacing its defaults ([] unbinds). */
+export type KeymapOverrides = Readonly<Record<string, readonly string[]>>;
+
 export interface Settings {
   schemaVersion: number;
   theme: ThemePreference;
@@ -33,6 +54,30 @@ export interface Settings {
   wrap: WrapSettings;
   /** Editor text size in CSS pixels (View > Zoom). */
   fontSize: number;
+  appearance: AppearanceSettings;
+  keymap: KeymapOverrides;
+  spellcheck: boolean;
+}
+
+export const DEFAULT_APPEARANCE: AppearanceSettings = {
+  textFont: "",
+  codeFont: "",
+  codeFontScale: 90,
+  lineHeight: 160,
+  lightColors: {},
+  darkColors: {},
+};
+
+export function setAppearance(appearance: AppearanceSettings): Promise<Settings> {
+  return invoke<Settings>("set_appearance", { appearance });
+}
+
+export function setKeymap(keymap: KeymapOverrides): Promise<Settings> {
+  return invoke<Settings>("set_keymap", { keymap });
+}
+
+export function setSpellcheck(enabled: boolean): Promise<Settings> {
+  return invoke<Settings>("set_spellcheck", { enabled });
 }
 
 export function getSettings(): Promise<Settings> {

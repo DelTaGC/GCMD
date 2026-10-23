@@ -11,6 +11,7 @@ import { hr } from "./hr";
 import { inline } from "./inline";
 import { lists } from "./lists";
 import { mermaid } from "./mermaid";
+import { spelling } from "./spelling";
 import { table } from "./table";
 
 export const livePreview: Extension = [
@@ -22,4 +23,5 @@ export const livePreview: Extension = [
   codeFence,
   table,
   mermaid,
+  spelling,
 ];

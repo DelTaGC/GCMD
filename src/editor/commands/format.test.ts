@@ -5,6 +5,7 @@ import {
   clearFormatting,
   insertLink,
   toggleEmphasis,
+  toggleCodeBlock,
   toggleInlineCode,
   toggleStrikethrough,
   toggleStrong,
@@ -149,5 +150,33 @@ describe("clearFormatting", () => {
   it("only touches nodes overlapping the selection", () => {
     const r = apply(clearFormatting, stateWith("**a** and **b**", { anchor: 0, head: 5 }));
     expect(r.doc).toBe("a and **b**");
+  });
+});
+
+describe("toggleCodeBlock", () => {
+  it("leaves a single-line selection to inline code", () => {
+    const r = apply(toggleCodeBlock, stateWith("a b\nc", { anchor: 0, head: 3 }));
+    expect(r.ran).toBe(false);
+  });
+
+  it("fences the selected lines with the cursor in the info string", () => {
+    const r = apply(toggleCodeBlock, stateWith("p\nx = 1\ny = 2\nq", { anchor: 3, head: 9 }));
+    expect(r.doc).toBe("p\n```\nx = 1\ny = 2\n```\nq");
+    expect([r.from, r.to]).toEqual([5, 5]);
+  });
+
+  it("ignores a last line selected only up to its start", () => {
+    const r = apply(toggleCodeBlock, stateWith("a\nb\nc", { anchor: 0, head: 4 }));
+    expect(r.doc).toBe("```\na\nb\n```\nc");
+  });
+
+  it("keeps the indentation and outgrows backtick runs in the body", () => {
+    const r = apply(toggleCodeBlock, stateWith("  ```\n  x", { anchor: 0, head: 9 }));
+    expect(r.doc).toBe("  ````\n  ```\n  x\n  ````");
+  });
+
+  it("removes the fences around a selection inside a block", () => {
+    const r = apply(toggleCodeBlock, stateWith("p\n```ts\na\nb\n```\nq", { anchor: 8, head: 11 }));
+    expect(r.doc).toBe("p\na\nb\nq");
   });
 });

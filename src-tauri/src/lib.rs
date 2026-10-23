@@ -21,7 +21,9 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 
 use crate::document::{Document, DocumentMeta};
 use crate::error::AppError;
-use crate::settings::{Settings, Theme, UpdateCheck, WrapSettings};
+use crate::settings::{
+    AppearanceSettings, KeymapOverrides, Settings, Theme, UpdateCheck, WrapSettings,
+};
 use crate::updater::{PendingUpdate, UpdateInfo};
 use crate::watcher::DocumentWatcher;
 
@@ -97,7 +99,10 @@ impl AppState {
     }
 
     /// Applies `mutate`, persists the result, rebuilds the menu and returns
-    /// the new settings.
+    /// the new settings. The change is applied to the file as it is on disk
+    /// (`settings::merge_change`), so a change made meanwhile by another
+    /// GCMD window is kept instead of being overwritten by this process's
+    /// older copy.
     fn update<R: Runtime>(
         &self,
         app: &AppHandle<R>,
@@ -108,7 +113,7 @@ impl AppState {
                 .settings
                 .lock()
                 .map_err(|_| AppError::Internal("settings lock poisoned".into()))?;
-            mutate(&mut guard);
+            *guard = settings::merge_change(&self.settings_path, &guard, mutate);
             guard.clone()
         };
         settings::save(&self.settings_path, &updated)?;
@@ -221,6 +226,37 @@ fn set_font_size<R: Runtime>(
     size: u32,
 ) -> Result<Settings, AppError> {
     state.update(&app, |s| s.font_size = settings::clamp_font_size(size))
+}
+
+#[tauri::command]
+fn set_appearance<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    appearance: AppearanceSettings,
+) -> Result<Settings, AppError> {
+    let appearance = appearance.sanitized();
+    state.update(&app, |s| s.appearance = appearance)
+}
+
+/// Replaces the keymap overrides; the menu is rebuilt with the new
+/// accelerators.
+#[tauri::command]
+fn set_keymap<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    keymap: KeymapOverrides,
+) -> Result<Settings, AppError> {
+    let keymap = settings::sanitize_keymap(&keymap);
+    state.update(&app, |s| s.keymap = keymap)
+}
+
+#[tauri::command]
+fn set_spellcheck<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<Settings, AppError> {
+    state.update(&app, |s| s.spellcheck = enabled)
 }
 
 #[tauri::command]
@@ -441,6 +477,9 @@ pub fn run() {
             set_sidebar_visible,
             set_wrap,
             set_font_size,
+            set_appearance,
+            set_keymap,
+            set_spellcheck,
             add_recent_file,
             remove_recent_file,
             clear_recent_files,

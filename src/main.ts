@@ -5,6 +5,7 @@
 import type { ViewUpdate } from "@codemirror/view";
 import { createOutlineController } from "./app/outline";
 import { createSession } from "./app/session";
+import { createSettingsController } from "./app/settings";
 import { createUpdateController } from "./app/updates";
 import { createWrapController } from "./app/wrap";
 import { createZoomController } from "./app/zoom";
@@ -16,7 +17,16 @@ import { runCommand } from "./editor/commands";
 import { createEditor, replaceDocument } from "./editor/create";
 import { launchArgs } from "./ipc/app";
 import { onFileChanged, onMenu, onOpenFile } from "./ipc/events";
-import { getSettings, setFontSize, setWrap, type Settings } from "./ipc/settings";
+import {
+  DEFAULT_APPEARANCE,
+  getSettings,
+  setAppearance,
+  setFontSize,
+  setKeymap,
+  setSpellcheck,
+  setWrap,
+  type Settings,
+} from "./ipc/settings";
 import { isTauri } from "./ipc/env";
 import { onCloseRequested, onFilesDropped } from "./ipc/window";
 
@@ -38,6 +48,9 @@ const DEFAULT_SETTINGS: Settings = {
   updates: { check: "auto", lastCheckMs: null, skippedVersion: null },
   wrap: { mode: "full", width: 832, margin: 40 },
   fontSize: 16,
+  appearance: DEFAULT_APPEARANCE,
+  keymap: {},
+  spellcheck: true,
 };
 
 async function loadSettings(): Promise<Settings> {
@@ -87,6 +100,17 @@ async function bootstrap(): Promise<void> {
     },
   });
   host.append(zoom.badge.element);
+  const preferences = createSettingsController({
+    view,
+    textSize: zoom,
+    initial: settings,
+    persist: {
+      appearance: (next) => (isTauri() ? setAppearance(next) : Promise.resolve()),
+      keymap: (next) => (isTauri() ? setKeymap(next) : Promise.resolve()),
+      spellcheck: (enabled) => (isTauri() ? setSpellcheck(enabled) : Promise.resolve()),
+    },
+  });
+  document.body.append(preferences.panel.element);
   const current = createSession({
     view,
     banner,
@@ -106,7 +130,17 @@ async function bootstrap(): Promise<void> {
     // Debug handle for the browser console and automated UI checks
     // (`replaceDocument` loads text without IPC, see docs/perf.md).
     Object.assign(window, {
-      gcmd: { view, session: current, outline, sidebar, banner, wrap, zoom, replaceDocument },
+      gcmd: {
+        view,
+        session: current,
+        outline,
+        sidebar,
+        banner,
+        wrap,
+        zoom,
+        preferences,
+        replaceDocument,
+      },
     });
   }
   if (!isTauri()) {
@@ -117,6 +151,9 @@ async function bootstrap(): Promise<void> {
 
   installMenuMnemonics();
   await onMenu((id) => {
+    if (preferences.interceptMenu(id)) {
+      return;
+    }
     if (id.startsWith(RECENT_PREFIX)) {
       void current.open(id.slice(RECENT_PREFIX.length));
       return;

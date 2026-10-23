@@ -6,7 +6,7 @@
   height: 100%;
   font-family: var(--font-editor);
   font-size: var(--editor-font-size);
-  line-height: 1.6;
+  line-height: var(--editor-line-height);
   color: var(--fg);
   background: var(--bg);
 }
@@ -107,7 +107,7 @@
 }
 .cm-inline-code {
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  font-size: var(--code-font-size);
   background: var(--code-bg);
   border-radius: 4px;
   padding: 0.1em 0.3em;
@@ -121,7 +121,7 @@
 .cm-url {
   color: var(--fg-muted);
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  font-size: var(--code-font-size);
 }
 .cm-image {
   color: var(--fg-muted);
@@ -129,7 +129,7 @@
 .cm-html {
   color: var(--fg-muted);
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  font-size: var(--code-font-size);
 }
 .cm-link-reference {
   color: var(--fg-muted);
@@ -191,7 +191,7 @@
 /* Code blocks */
 .cm-code-line {
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  font-size: var(--code-font-size);
   line-height: 1.5;
   background: var(--code-bg);
   padding-left: 0.8em;
@@ -207,6 +207,13 @@
   border-bottom-right-radius: 6px;
   padding-bottom: 0.3em;
 }
+/* The emptied closing fence of an inactive block takes no space. */
+.cm-line.cm-code-close {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
 .cm-code-label {
   color: var(--fg-muted);
   font-size: 0.8em;
@@ -220,7 +227,7 @@
 /* Tables, raw mode (active block) */
 .cm-table-line {
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  font-size: var(--code-font-size);
 }
 
 /* Syntax highlighting inside code blocks (classHighlighter tok-* classes). */
@@ -421,7 +428,7 @@
 }
 .cm-table-widget code {
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  font-size: var(--code-font-size);
   background: var(--code-bg);
   border-radius: 4px;
   padding: 0.1em 0.3em;

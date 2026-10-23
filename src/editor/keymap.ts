@@ -10,11 +10,15 @@
  *
  * Native menu accelerators (Rust `menu.rs`) use the same ids; on Windows the
  * menu consumes the key and forwards the id, so both paths run one command.
+ *
+ * User overrides (settings `keymap`, edited in the settings panel) replace
+ * the keys of the commands they name; `setKeymapOverrides` installs them in
+ * the running editor and the Rust side rebuilds the menu accelerators.
  */
 import { defaultKeymap, historyKeymap } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
-import type { Extension } from "@codemirror/state";
-import { keymap, type KeyBinding } from "@codemirror/view";
+import { Compartment, type Extension } from "@codemirror/state";
+import { keymap, type EditorView, type KeyBinding } from "@codemirror/view";
 import { isMac } from "../ipc/env";
 import { runCommand } from "./commands/registry";
 
@@ -97,19 +101,78 @@ export const shortcuts: readonly Shortcut[] = [
   { key: "Mod-h", command: "search.replace" },
   { key: "F3", command: "search.next" },
   { key: "Shift-F3", command: "search.previous" },
-  // File and window (registered by app/session.ts)
+  // File and window (registered by app/session.ts; file.settings by app/settings.ts)
   { key: "Mod-s", command: "file.save" },
   { key: "Mod-Shift-s", command: "file.saveAs" },
   { key: "Mod-o", command: "file.open" },
   { key: "Mod-n", command: "file.new" },
   { key: "Mod-Shift-n", command: "file.newWindow" },
+  { key: "Mod-,", command: "file.settings" },
 ];
+
+/** Keymap overrides: command id -> keys replacing its defaults ([] unbinds). */
+export type KeymapOverrides = Readonly<Record<string, readonly string[]>>;
+
+const MODIFIER_ORDER = ["Mod", "Ctrl", "Meta", "Alt", "Shift"] as const;
+
+/**
+ * Canonical form of a key name for comparisons: modifiers in a fixed order
+ * (`Shift-Alt-f` and `Alt-Shift-f` are the same key), `Cmd` read as
+ * `Meta`, a one-character key in lower case.
+ */
+export function canonicalKey(key: string): string {
+  const parts = key.split(/-(?!$)/);
+  const last = parts.pop() ?? "";
+  const mods = new Set(parts.map((m) => (m === "Cmd" ? "Meta" : m === "Control" ? "Ctrl" : m)));
+  const base = last.length === 1 ? last.toLowerCase() : last;
+  return [...MODIFIER_ORDER.filter((m) => mods.has(m)), base].join("-");
+}
+
+/**
+ * The default table with `overrides` applied: an overridden command gets
+ * exactly its override keys; a default key that an override took over is
+ * dropped from the command it belonged to.
+ */
+export function effectiveShortcuts(
+  overrides: KeymapOverrides,
+  defaults: readonly Shortcut[] = shortcuts,
+): Shortcut[] {
+  const taken = new Set<string>();
+  const result: Shortcut[] = [];
+  for (const [command, keys] of Object.entries(overrides)) {
+    for (const key of keys) {
+      const canonical = canonicalKey(key);
+      if (!taken.has(canonical)) {
+        taken.add(canonical);
+        result.push({ key, command });
+      }
+    }
+  }
+  for (const s of defaults) {
+    if (!(s.command in overrides) && !taken.has(canonicalKey(s.key))) {
+      result.push(s);
+    }
+  }
+  return result;
+}
+
+/** The shortcuts in effect: defaults plus the user's overrides. */
+let active: readonly Shortcut[] = shortcuts;
+
+export function activeShortcuts(): readonly Shortcut[] {
+  return active;
+}
+
+/** Keys currently bound to `command`, in table order. */
+export function keysFor(command: string): string[] {
+  return active.filter((s) => s.command === command).map((s) => s.key);
+}
 
 /** Base CodeMirror bindings we do not want: multi-cursor and conflicts. */
 const DROPPED_BASE_KEYS = new Set(["Mod-d", "Mod-Alt-ArrowUp", "Mod-Alt-ArrowDown", "Mod-Shift-l"]);
 
 function normalize(key: string): string {
-  return key.toLowerCase();
+  return canonicalKey(key).toLowerCase();
 }
 
 /**
@@ -122,8 +185,8 @@ function hasOtherScope(binding: KeyBinding): boolean {
 }
 
 /** CodeMirror's default, history and search bindings minus what we override. */
-export function baseBindings(): KeyBinding[] {
-  const ours = new Set(shortcuts.map((s) => normalize(s.key)));
+export function baseBindings(table: readonly Shortcut[] = active): KeyBinding[] {
+  const ours = new Set(table.map((s) => normalize(s.key)));
   const keep = (binding: KeyBinding): boolean => {
     const names = [binding.key, binding.mac, binding.win, binding.linux].filter(
       (k): k is string => typeof k === "string",
@@ -163,18 +226,30 @@ export function formatKey(key: string): string {
 
 /** The label of the first shortcut bound to `command`, or `null`. */
 export function shortcutLabel(command: string): string | null {
-  const shortcut = shortcuts.find((s) => s.command === command);
+  const shortcut = active.find((s) => s.command === command);
   if (!shortcut) {
     return null;
   }
   return shortcut.label ?? formatKey(shortcut.key);
 }
 
-/** The keymap extension: our table first, then the filtered base. */
-export function buildKeymap(): Extension {
-  const ours: KeyBinding[] = shortcuts.map((s) => ({
+const keymapCompartment = new Compartment();
+
+function keymapConfig(table: readonly Shortcut[]): Extension {
+  const ours: KeyBinding[] = table.map((s) => ({
     key: s.key,
     run: (view) => runCommand(s.command, view),
   }));
-  return [keymap.of(ours), keymap.of(baseBindings())];
+  return [keymap.of(ours), keymap.of(baseBindings(table))];
+}
+
+/** The keymap extension: our table first, then the filtered base. */
+export function buildKeymap(): Extension {
+  return keymapCompartment.of(keymapConfig(active));
+}
+
+/** Installs the user's overrides in `view` (and in states created later). */
+export function setKeymapOverrides(view: EditorView | null, overrides: KeymapOverrides): void {
+  active = effectiveShortcuts(overrides);
+  view?.dispatch({ effects: keymapCompartment.reconfigure(keymapConfig(active)) });
 }

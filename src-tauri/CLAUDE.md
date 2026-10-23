@@ -58,7 +58,10 @@ is not OS integration belongs in the TypeScript frontend.
   `#[serde(default)]` so older files load without a schema bump. An
   unreadable `settings.json` is renamed to `settings.invalid.json` at
   startup (`settings::load_or_recover`) before defaults could overwrite it;
-  a UTF-8 BOM is accepted.
+  a UTF-8 BOM is accepted. `AppState::update` applies each change to the
+  file as it is on disk (`settings::merge_change`), since every window is
+  its own process; never save this process's whole copy over it. Keymap
+  overrides also set the native menu accelerators (`menu::apply_keymap`).
 - The updater plugin is used from Rust only (`updater.rs`); never grant the
   frontend `updater:*` or `process:*` permissions. On Windows the NSIS
   installer force-closes every process of the installed exe, so

@@ -242,11 +242,17 @@ Each phase ends with: tests green, lint clean, a manual verification checklist r
 - License GPL-3.0-or-later (ADR 0011) with a section 7 additional permission for `elkjs` (EPL-2.0), so mermaid ELK layouts work (ADR 0012, `LICENSE-EXCEPTION`).
 - **Done when:** the first real release (0.1.0) is published from GitHub and a later one updates an installed copy; checklist `docs/checklists/phase-6-updates.md`.
 
-### Phase 7 — Later features (designed for, not built now)
+### Phase 7 — Settings UI and spell-check — IMPLEMENTED 2026-10-23 (full checklist walk and Linux/macOS checks pending)
 
-- **Settings UI:** schema in `settings.rs`, panel in `chrome/settings/`; font, sizes, colors, keymap editor (reads the same keymap table).
-- **Dictionary:** enable the webview's native spell-check first (WebView2/WKWebView/WebKitGTK), custom word list in settings; a bundled Hunspell path only if native proves insufficient.
-- **LLM hooks:** a `transform` command family (selection in, text out) with a provider interface in Rust (HTTP, keys in OS keychain); exposed through the command registry so menus, shortcuts, and quickbar can trigger them.
+- **Settings UI:** schema in `settings.rs`, an overlay panel in `chrome/settings/` (File > Settings, Ctrl+,) whose changes apply live; fonts, sizes, a curated set of colors per theme, keymap editor (rebinding and unbinding any command over the same keymap table, with conflict and dead-key checks; the native menu is rebuilt with the new accelerators).
+- **Dictionary:** the webview's native spell-check (WebView2/WKWebView/WebKitGTK) with an on/off setting; code, URLs and inline code are excluded. Languages come from the OS; WebView2 shows suggestions but no "Add to dictionary" and has no API for a custom word list. A bundled Hunspell path (own word list, whole-document checking) only if native proves insufficient.
+- **Done when:** every setting survives a restart and an update, two open windows never overwrite each other's settings changes, and the checklist `docs/checklists/phase-7-settings.md` passes in both themes.
+
+### Phase 8 — LLM features (to be designed)
+
+- **State-of-the-art review first:** survey how current Markdown and prose editors (Obsidian plugins, Typora, Zettlr, iA Writer, Notion, VS Code/Cursor, Zed…) integrate LLMs: which features users actually rely on (rewrite, translate, summarize, continue, table import from text or images, grammar), interaction patterns (inline diff and accept/reject, side panel, command palette), local versus hosted models, privacy and key handling.
+- **Co-design with the user:** from that review, pick the few features worth building in a single-document editor and write them down as an ADR before any code.
+- **Architecture constraints already in place:** features are commands in the registry (invariant 3), so menus, shortcuts and the quickbar can trigger them; any network access or secret lives in Rust behind least-privilege commands (invariant 8), with keys in the OS keychain; edits arrive as one undoable transaction and never touch text the user did not select or approve.
 
 ---
 

@@ -113,6 +113,66 @@ export const toggleEmphasis = toggleWrap(EMPHASIS);
 export const toggleInlineCode = toggleWrap(INLINE_CODE);
 export const toggleStrikethrough = toggleWrap(STRIKETHROUGH);
 
+/**
+ * Wraps the lines of a selection spanning several lines in a fenced code
+ * block, or removes the fences when the selection lies inside one. The
+ * cursor lands after the opening fence, ready for a language. False for a
+ * selection on a single line, so the caller falls back to inline code.
+ */
+export const toggleCodeBlock: StateCommand = ({ state, dispatch }) => {
+  const range = state.selection.main;
+  const first = state.doc.lineAt(range.from);
+  let last = state.doc.lineAt(range.to);
+  // A selection ending at the start of a line (Shift+Down) excludes that line.
+  if (range.to === last.from && last.number > first.number) {
+    last = state.doc.line(last.number - 1);
+  }
+  if (last.number === first.number) {
+    return false;
+  }
+  const fence = enclosingNode(state, range.from, range.to, "FencedCode");
+  if (fence) {
+    const open = state.doc.lineAt(fence.from);
+    const close = state.doc.lineAt(fence.to);
+    const marks = fence.getChildren("CodeMark");
+    const changes = [{ from: open.from, to: Math.min(open.to + 1, state.doc.length), insert: "" }];
+    if (marks.length > 1 && close.number > open.number) {
+      changes.push({ from: close.from - 1, to: close.to, insert: "" });
+    }
+    const set = state.changes(changes);
+    dispatch(
+      state.update({
+        changes: set,
+        selection: state.selection.map(set),
+        scrollIntoView: true,
+        userEvent: "delete.format",
+      }),
+    );
+    return true;
+  }
+  const body = state.doc.sliceString(first.from, last.to);
+  const indent = /^[ \t]*/.exec(first.text)?.[0] ?? "";
+  // A fence longer than any backtick run at a line start inside the body.
+  let longest = 0;
+  for (const run of body.matchAll(/^[ \t]*(`+)/gm)) {
+    longest = Math.max(longest, run[1]?.length ?? 0);
+  }
+  const marker = "`".repeat(Math.max(3, longest + 1));
+  const opening = `${indent}${marker}\n`;
+  dispatch(
+    state.update({
+      changes: [
+        { from: first.from, insert: opening },
+        { from: last.to, insert: `\n${indent}${marker}` },
+      ],
+      selection: EditorSelection.cursor(first.from + opening.length - 1),
+      scrollIntoView: true,
+      userEvent: "input.format",
+    }),
+  );
+  return true;
+};
+
 /** Inline nodes whose marks `clearFormatting` removes, with their mark names. */
 const CLEARABLE: Readonly<Record<string, readonly string[]>> = {
   StrongEmphasis: ["EmphasisMark"],

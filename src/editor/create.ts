@@ -22,6 +22,7 @@ import { linkCompletion } from "./linkCompletion";
 import { linkOpener } from "./links";
 import { livePreview } from "./livePreview";
 import { quickbar } from "./quickbar";
+import { isSpellchecking, spellcheckExtension } from "./spellcheck";
 import { tableBar } from "./tableBar";
 import { editorTheme } from "./theme";
 import { isWrapping, wrapExtension } from "./wrap";
@@ -51,6 +52,7 @@ export function createEditorState(
   extra: Extension[] = [],
   path: string | null = null,
   wrap = true,
+  spellcheck = false,
 ): EditorState {
   return EditorState.create({
     doc,
@@ -60,6 +62,7 @@ export function createEditorState(
       dropCursor(),
       highlightSpecialChars(),
       wrapExtension(wrap),
+      spellcheckExtension(spellcheck),
       EditorState.allowMultipleSelections.of(false),
       indentUnit.of("  "),
       documentPathExtension(path),
@@ -104,6 +107,7 @@ export function replaceDocument(
       listeners.map((listener) => EditorView.updateListener.of(listener)),
       path,
       isWrapping(view.state),
+      isSpellchecking(view.state),
     ),
   );
 }

@@ -3,8 +3,9 @@
  *
  * Every line of a block gets a monospace background class. When a fenced
  * block is not active (the selection touches none of its lines) the opening
- * fence is replaced by a language dropdown and the closing fence is emptied,
- * so the fence lines act as the block's padding. Choosing a language in the
+ * fence is replaced by a language dropdown and the closing fence line is
+ * emptied and collapsed (`cm-code-close`), so the background ends with the
+ * last line of code. Choosing a language in the
  * dropdown rewrites the info string (`commands/code.ts`).
  *
  * Labeled fences are highlighted by the nested parser that
@@ -111,9 +112,16 @@ class EmptyWidget extends WidgetType {
 
 const emptyFence = new EmptyWidget();
 
-function markLines(ref: SyntaxNodeRef, state: EditorState, out: Collector): void {
+/** Code line classes; `collapseLast` hides the last line and rounds the one above. */
+function markLines(
+  ref: SyntaxNodeRef,
+  state: EditorState,
+  out: Collector,
+  collapseLast = false,
+): void {
   const first = state.doc.lineAt(ref.from);
-  const last = state.doc.lineAt(ref.to);
+  const end = state.doc.lineAt(ref.to);
+  const last = collapseLast ? state.doc.line(end.number - 1) : end;
   for (let n = first.number; n <= last.number; n += 1) {
     const line = state.doc.line(n);
     let cls = "cm-code-line";
@@ -124,6 +132,9 @@ function markLines(ref: SyntaxNodeRef, state: EditorState, out: Collector): void
       cls += " cm-code-last";
     }
     out.line(line.from, cls);
+  }
+  if (collapseLast) {
+    out.line(end.from, "cm-code-close");
   }
 }
 
@@ -232,7 +243,12 @@ function decorateFence(ref: SyntaxNodeRef, state: EditorState, out: Collector): 
   if (!active && language.toLowerCase() === "mermaid") {
     return; // rendered as a diagram by the mermaid family
   }
-  markLines(ref, state, out);
+  const openLine = state.doc.lineAt(ref.from);
+  const closing = marks[1];
+  const closeLine = closing?.to === ref.to ? state.doc.lineAt(closing.from) : null;
+  // The closing fence collapses when at least one code line sits between the fences.
+  const collapse = !active && closeLine !== null && closeLine.number > openLine.number + 1;
+  markLines(ref, state, out, collapse);
   if (active) {
     for (const mark of marks) {
       out.mark(mark.from, mark.to, "cm-mark");
@@ -252,14 +268,9 @@ function decorateFence(ref: SyntaxNodeRef, state: EditorState, out: Collector): 
       highlightWith(desc, code, text.from, state, out);
     }
   }
-  const openLine = state.doc.lineAt(ref.from);
   out.replace(openLine.from, openLine.to, new LanguageSelectWidget(language, detected));
-  const closing = marks[1];
-  if (closing?.to === ref.to) {
-    const closeLine = state.doc.lineAt(closing.from);
-    if (closeLine.number !== openLine.number) {
-      out.replace(closeLine.from, closeLine.to, emptyFence);
-    }
+  if (closeLine !== null && closeLine.number !== openLine.number) {
+    out.replace(closeLine.from, closeLine.to, emptyFence);
   }
 }
 
