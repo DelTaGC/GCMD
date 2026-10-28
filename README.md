@@ -26,7 +26,7 @@ updates itself: it checks once a day and asks before installing
 
 ## Prerequisites
 
-- Node.js 22.22+ (24 recommended, see `.nvmrc`)
+- Node.js 22.23.4+ (24 recommended, see `.nvmrc`)
 - Rust stable with the MSVC toolchain on Windows (`rustup`)
 - Windows: Visual Studio Build Tools, "Desktop development with C++" workload
 - Linux: `libwebkit2gtk-4.1-dev`, `build-essential`, `libssl-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`
