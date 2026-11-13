@@ -21,7 +21,8 @@ let counter = 0;
 
 const results = new Map<string, MermaidResult>();
 const pending = new Map<string, Promise<MermaidResult>>();
-const MAX_CACHED = 200;
+/** Results kept; `reserveMermaidCache` raises it for a document that needs more. */
+let maxCached = 200;
 
 /** cyrb53: small, fast, well-distributed 53-bit string hash. */
 export function contentHash(text: string): string {
@@ -47,7 +48,7 @@ function loadMermaid(): Promise<Mermaid> {
 }
 
 function remember(key: string, result: MermaidResult): MermaidResult {
-  if (results.size >= MAX_CACHED) {
+  if (results.size >= maxCached) {
     const oldest = results.keys().next().value;
     if (oldest !== undefined) {
       results.delete(oldest);
@@ -89,6 +90,15 @@ async function renderNow(source: string, dark: boolean): Promise<MermaidResult> 
     document.getElementById(id)?.remove();
     return { error: describe(err) };
   }
+}
+
+/**
+ * Makes room for `count` results at once. Printing draws every diagram of the
+ * document from the cache; with fewer slots than diagrams the first ones
+ * would be evicted again before the page is drawn.
+ */
+export function reserveMermaidCache(count: number): void {
+  maxCached = Math.max(maxCached, count);
 }
 
 /** The cached result for this source and theme, if it has been rendered. */

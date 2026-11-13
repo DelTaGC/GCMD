@@ -357,6 +357,16 @@ fn open_menu<R: Runtime>(
     menu::popup_top_level(&app, window, &id).map_err(|e| AppError::Internal(e.to_string()))
 }
 
+/// Opens the system print dialog for the window's content (File > Print).
+/// The dialog is where a PDF is saved ("Save as PDF", "Print to File").
+/// `window.print()` does nothing in macOS `WKWebView`, hence a command.
+#[tauri::command]
+async fn print_window<R: Runtime>(window: tauri::WebviewWindow<R>) -> Result<(), AppError> {
+    window
+        .print()
+        .map_err(|e| AppError::Internal(e.to_string()))
+}
+
 #[tauri::command]
 fn display_path(path: String) -> String {
     cli::display_path(Path::new(&path))
@@ -486,6 +496,7 @@ pub fn run() {
             display_path,
             open_menu,
             open_new_window,
+            print_window,
             resolve_asset,
             resolve_path,
             list_dir,

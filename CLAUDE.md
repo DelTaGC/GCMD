@@ -62,11 +62,20 @@ before bumping TypeScript). In Bash tool calls, `cargo` needs
 
 ## Agent environment (Windows, Git Bash)
 
-- Create files with the Write tool, not heredocs: a multi-line
-  `cat > file <<'EOF'` whose content contains an apostrophe is rejected
-  whole. Write helper scripts to a file and run them with `bash <path>`.
-- **Edit files with the Edit tool, or `super_edit` for batched or multi-file replacements,
-  not `sed`** (fragile on Windows; fine inside WSL or the containers).
+- **Never create or modify a file from a shell command**: no heredoc
+  redirects (`cat > file <<'EOF'`), no `sed -i`, no inline `node -e` /
+  `python -c` that writes files, no `echo ... > file`. Text passed through
+  the shell goes through several quoting layers (bash, the inline script,
+  the file's own syntax, plus MSYS argument conversion for a native `.exe`),
+  and one miscounted backslash silently writes the wrong content; a
+  multi-file inline patch can also stop halfway. Create files with the
+  Write tool and change them with the Edit tool, or `super_edit` for batched
+  or multi-file replacements: both take the text literally. This holds for
+  throwaway files in the scratchpad too. A helper script is written with
+  Write, then run by path (`bash <path>`, `node <path>`). `sed -i` stays
+  fine inside WSL or the containers. A `PreToolUse` hook
+  (`~/.claude/hooks/bash-file-guard.mjs`, per machine) rejects these
+  commands where it is installed.
 - Windows CLI flags in Git Bash need doubled slashes
   (`taskkill //F //IM App.exe`), otherwise MSYS rewrites them as paths.
 - UI checks without a human: `npm run dev` serves the frontend at

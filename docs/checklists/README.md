@@ -16,3 +16,4 @@ the light and the dark theme. Each phase adds a file; keep old ones passing.
 | [link-completion.md](link-completion.md)       | Path and `#heading` completion in link destinations  |
 | [zoom.md](zoom.md)                             | Text size: Ctrl+wheel, keys, View > Zoom, badge      |
 | [phase-7-settings.md](phase-7-settings.md)     | Settings panel, shortcuts editor, spell-check        |
+| [print.md](print.md)                           | File > Print, PDF from the print dialog, page layout |

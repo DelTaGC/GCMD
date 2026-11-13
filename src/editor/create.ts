@@ -21,6 +21,7 @@ import { buildKeymap } from "./keymap";
 import { linkCompletion } from "./linkCompletion";
 import { linkOpener } from "./links";
 import { livePreview } from "./livePreview";
+import { printExtension } from "./print";
 import { quickbar } from "./quickbar";
 import { isSpellchecking, spellcheckExtension } from "./spellcheck";
 import { tableBar } from "./tableBar";
@@ -63,6 +64,7 @@ export function createEditorState(
       highlightSpecialChars(),
       wrapExtension(wrap),
       spellcheckExtension(spellcheck),
+      printExtension(),
       EditorState.allowMultipleSelections.of(false),
       indentUnit.of("  "),
       documentPathExtension(path),

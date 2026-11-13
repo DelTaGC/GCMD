@@ -11,6 +11,7 @@
  * inspects the selection.
  */
 import type { EditorState } from "@codemirror/state";
+import { isPrinting } from "../print";
 
 /** A half-open-looking but inclusive-at-both-ends document range. */
 export interface Span {
@@ -39,9 +40,13 @@ export function selectionTouches(state: EditorState, from: number, to: number): 
  * Applies the active-block rule to the node range `[from, to]`: the range is
  * first widened to whole lines, then tested against the selection. Callers
  * pass an inline node's own range (its line becomes the block) or a block
- * node's full range (the whole block is the block).
+ * node's full range (the whole block is the block). Nothing is active in
+ * print mode (`editor/print.ts`): the whole document prints rendered.
  */
 export function isActive(state: EditorState, from: number, to: number): boolean {
+  if (isPrinting(state)) {
+    return false;
+  }
   const span = lineSpan(state, from, to);
   return selectionTouches(state, span.from, span.to);
 }

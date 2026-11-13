@@ -5,7 +5,7 @@ import type { TransactionSpec } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 import { kinds, listDecorations, stateWith } from "../testing";
 import { visitBlockquote } from "./blockquote";
-import { infoLanguage, visitCodeFence } from "./codeFence";
+import { fenceLanguages, infoLanguage, visitCodeFence } from "./codeFence";
 import {
   collectBlocks,
   computeFamily,
@@ -15,6 +15,7 @@ import {
 } from "./decorate";
 import { visitHeadings } from "./headings";
 import { visitHr } from "./hr";
+import { localImageHrefs } from "./image";
 import { visitInline } from "./inline";
 import { toggleTaskMarkerAt, visitLists } from "./lists";
 import { visitMermaidBlocks } from "./mermaid";
@@ -394,5 +395,48 @@ describe("images", () => {
   it("keeps remote images as styled text", () => {
     const remote = "![r](https://x.y/a.png)\n\nx";
     expect(kinds(run(visitInline, remote, 26))).toEqual(["mark:cm-image@0-23"]);
+  });
+});
+
+describe("print preparation", () => {
+  it("lists each fence language once, labeled or detected", () => {
+    const doc = [
+      "```ts",
+      "const a = 1;",
+      "```",
+      "",
+      "```typescript",
+      "const b = 2;",
+      "```",
+      "",
+      "```",
+      "#!/usr/bin/env bash",
+      "set -euo pipefail",
+      'echo "detect me"',
+      "```",
+      "",
+      "```mermaid",
+      "graph TD",
+      "```",
+      "",
+      "```nosuchlanguage",
+      "x",
+      "```",
+    ].join("\n");
+    const names = fenceLanguages(stateWith(doc)).map((d) => d.name);
+    expect(names).toEqual(["TypeScript", "Shell"]);
+  });
+
+  it("lists local images once and skips remote ones", () => {
+    const doc = [
+      "![a](img/a.png) and ![again](img/a.png)",
+      "",
+      "| t |",
+      "| - |",
+      "| ![b](b.png) |",
+      "",
+      "![r](https://x.y/r.png)",
+    ].join("\n");
+    expect(localImageHrefs(stateWith(doc))).toEqual(["img/a.png", "b.png"]);
   });
 });

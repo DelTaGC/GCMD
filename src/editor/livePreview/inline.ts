@@ -8,6 +8,9 @@
  */
 import type { EditorState } from "@codemirror/state";
 import type { SyntaxNode, SyntaxNodeRef } from "@lezer/common";
+import { currentDocumentPath } from "../document";
+import { isPrinting } from "../print";
+import { printHref, referenceHref } from "../printLinks";
 import { isActive } from "./activeBlock";
 import { livePreviewFamily, type Collector, type NodeVisitor } from "./decorate";
 import { imageWidget } from "./image";
@@ -42,6 +45,37 @@ function linkUrl(node: SyntaxNode, state: EditorState): string | undefined {
   return url ? state.doc.sliceString(url.from, url.to) : undefined;
 }
 
+/**
+ * Print mode only (`editor/print.ts`): marks `[from, to)` as a real
+ * `<a href>` so the PDF gets a clickable link. Returns false when not
+ * printing or when `destination` has no printable target (`printLinks.ts`);
+ * the caller then styles the text as on screen.
+ */
+function markPrintLink(
+  state: EditorState,
+  out: Collector,
+  from: number,
+  to: number,
+  destination: string | undefined,
+): boolean {
+  if (destination === undefined || !isPrinting(state)) {
+    return false;
+  }
+  const href = printHref(destination, currentDocumentPath(state));
+  if (href === null) {
+    return false;
+  }
+  out.mark(from, to, "cm-link", { href }, "a");
+  return true;
+}
+
+/** A URL that is its own text: `<https://…>` and bare GFM autolinks. */
+function markUrl(state: EditorState, out: Collector, from: number, to: number): void {
+  if (!markPrintLink(state, out, from, to, state.doc.sliceString(from, to))) {
+    out.mark(from, to, "cm-link");
+  }
+}
+
 /** `[text](url)`, `[text][ref]`, `[ref][]`, `[ref]`. */
 function decorateLink(ref: SyntaxNodeRef, state: EditorState, out: Collector): void {
   const node = ref.node;
@@ -51,7 +85,20 @@ function decorateLink(ref: SyntaxNodeRef, state: EditorState, out: Collector): v
   const url = linkUrl(node, state);
   const textFrom = open ? open.to : ref.from;
   const textTo = close ? close.from : ref.to;
-  out.mark(textFrom, textTo, "cm-link", url === undefined ? undefined : { title: url });
+  let destination = url;
+  const label = node.getChild("LinkLabel");
+  if (destination === undefined && label && isPrinting(state)) {
+    // `[text][label]`, or `[label][]` where the text is the label. A link
+    // without a label (`[text]()`) is not a reference and has no target.
+    const written = state.doc.sliceString(label.from + 1, label.to - 1);
+    destination = referenceHref(
+      state,
+      written.trim() === "" ? state.doc.sliceString(textFrom, textTo) : written,
+    );
+  }
+  if (!markPrintLink(state, out, textFrom, textTo, destination)) {
+    out.mark(textFrom, textTo, "cm-link", url === undefined ? undefined : { title: url });
+  }
   if (isActive(state, ref.from, ref.to)) {
     for (const mark of marks) {
       out.mark(mark.from, mark.to, "cm-mark");
@@ -75,7 +122,7 @@ function decorateAutolink(ref: SyntaxNodeRef, state: EditorState, out: Collector
   const node = ref.node;
   const url = node.getChild("URL");
   if (url) {
-    out.mark(url.from, url.to, "cm-link");
+    markUrl(state, out, url.from, url.to);
   }
   if (isActive(state, ref.from, ref.to)) {
     for (const mark of node.getChildren("LinkMark")) {
@@ -135,7 +182,7 @@ export const visitInline: NodeVisitor = (ref, state, out) => {
       // A bare GFM autolink (www., http(s)://, email). URLs inside Link,
       // Image, Autolink and LinkReference nodes belong to their parents.
       if (!LINK_PARENTS.has(ref.node.parent?.name ?? "")) {
-        out.mark(ref.from, ref.to, "cm-link");
+        markUrl(state, out, ref.from, ref.to);
       }
       return false;
     case "Image":

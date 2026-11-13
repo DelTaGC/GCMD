@@ -18,6 +18,8 @@ import type { SyntaxNodeRef } from "@lezer/common";
 import { runCommand } from "../commands/registry";
 import { alignTableChange, tableAt } from "../commands/table";
 import { currentDocumentPath } from "../document";
+import { isPrinting } from "../print";
+import { printHref, referenceHref } from "../printLinks";
 import { isActive } from "./activeBlock";
 import {
   blockFamily,
@@ -53,11 +55,18 @@ export class TableWidget extends WidgetType {
     readonly header: RowView,
     readonly body: readonly RowView[],
     readonly documentPath: string | null,
+    /** Print mode: links are real `<a href>` elements (`editor/printLinks.ts`). */
+    readonly printing = false,
   ) {
     super();
   }
 
-  static fromModel(model: TableModel, source: string, documentPath: string | null): TableWidget {
+  static fromModel(
+    model: TableModel,
+    source: string,
+    documentPath: string | null,
+    printing = false,
+  ): TableWidget {
     const row = (cells: readonly { from: number; text: string }[]): RowView => ({
       cells: cells.map((cell) => ({ offset: cell.from - model.from, text: cell.text })),
     });
@@ -67,11 +76,16 @@ export class TableWidget extends WidgetType {
       row(model.header.cells),
       model.body.map((r) => row(r.cells)),
       documentPath,
+      printing,
     );
   }
 
   override eq(other: TableWidget): boolean {
-    return other.source === this.source && other.documentPath === this.documentPath;
+    return (
+      other.source === this.source &&
+      other.documentPath === this.documentPath &&
+      other.printing === this.printing
+    );
   }
 
   override toDOM(view: EditorView): HTMLElement {
@@ -83,6 +97,12 @@ export class TableWidget extends WidgetType {
       onLayout: (): void => {
         view.requestMeasure();
       },
+      printHref: this.printing
+        ? (href: string): string | null => printHref(href, this.documentPath)
+        : null,
+      referenceHref: this.printing
+        ? (label: string): string | undefined => referenceHref(view.state, label)
+        : null,
     };
     const columns = this.header.cells.length;
     const makeRow = (row: RowView, tag: "th" | "td"): HTMLTableRowElement => {
@@ -434,7 +454,7 @@ export const visitTableBlocks: BlockVisitor = (ref: SyntaxNodeRef, state, blocks
     blocks.push({
       from: model.from,
       to: model.to,
-      widget: TableWidget.fromModel(model, source, currentDocumentPath(state)),
+      widget: TableWidget.fromModel(model, source, currentDocumentPath(state), isPrinting(state)),
     });
   }
   return false;

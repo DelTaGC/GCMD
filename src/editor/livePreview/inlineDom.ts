@@ -12,6 +12,17 @@ export interface InlineContext {
   readonly documentPath: string | null;
   /** Called when an asynchronously loaded element changed the layout. */
   readonly onLayout: () => void;
+  /**
+   * Print mode: the URL a destination prints as (`printLinks.ts`
+   * `printHref`), so links become real `<a href>` elements. `null` on
+   * screen, where links are styled text opened with Ctrl+click.
+   */
+  readonly printHref: ((href: string) => string | null) | null;
+  /**
+   * Print mode: the destination of a reference label defined anywhere in
+   * the document (`printLinks.ts` `referenceHref`). `null` on screen.
+   */
+  readonly referenceHref: ((label: string) => string | undefined) | null;
 }
 
 /** Child nodes that are markup, not content. */
@@ -36,8 +47,36 @@ function textOf(text: string, node: SyntaxNode): string {
   return text.slice(node.from, node.to);
 }
 
-function linkElement(href: string, title: string | null): HTMLElement {
-  const link = document.createElement("span");
+/**
+ * Print mode: the destination a reference link (`[text][label]`,
+ * `[label][]`) is defined with in the document, `""` when it has none or on
+ * screen. The cell alone does not contain the definition.
+ */
+export function referenceTarget(text: string, node: SyntaxNode, ctx: InlineContext): string {
+  const label = node.getChild("LinkLabel");
+  if (!label || !ctx.referenceHref) {
+    return "";
+  }
+  const written = text.slice(label.from + 1, label.to - 1);
+  if (written.trim() !== "") {
+    return ctx.referenceHref(written) ?? "";
+  }
+  const marks = node.getChildren("LinkMark");
+  const open = marks[0];
+  const close = marks[1];
+  return open && close ? (ctx.referenceHref(text.slice(open.to, close.from)) ?? "") : "";
+}
+
+function linkElement(href: string, title: string | null, ctx: InlineContext): HTMLElement {
+  const printed = ctx.printHref?.(href) ?? null;
+  let link: HTMLElement;
+  if (printed === null) {
+    link = document.createElement("span");
+  } else {
+    const anchor = document.createElement("a");
+    anchor.href = printed;
+    link = anchor;
+  }
   link.className = "cm-link";
   link.dataset["href"] = href;
   link.title = title ?? href;
@@ -79,8 +118,9 @@ function renderNode(text: string, node: SyntaxNode, parent: HTMLElement, ctx: In
       const url = node.getChild("URL");
       const title = node.getChild("LinkTitle");
       const element = linkElement(
-        url ? textOf(text, url) : "",
+        url ? textOf(text, url) : referenceTarget(text, node, ctx),
         title ? textOf(text, title).slice(1, -1) : null,
+        ctx,
       );
       renderChildren(text, node, element, ctx);
       parent.append(element);
@@ -89,14 +129,14 @@ function renderNode(text: string, node: SyntaxNode, parent: HTMLElement, ctx: In
     case "Autolink": {
       const url = node.getChild("URL");
       const href = url ? textOf(text, url) : "";
-      const element = linkElement(href, null);
+      const element = linkElement(href, null, ctx);
       element.textContent = href;
       parent.append(element);
       return;
     }
     case "URL": {
       const href = textOf(text, node);
-      const element = linkElement(href, null);
+      const element = linkElement(href, null, ctx);
       element.textContent = href;
       parent.append(element);
       return;

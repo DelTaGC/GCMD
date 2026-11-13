@@ -4,6 +4,10 @@ One section per release, newest first. The section of a version becomes the
 GitHub release text and the notes shown in the in-app update banner
 (`tools/release/notes.mjs`), so write it for users.
 
+## 0.3.1
+
+- Add "Print to PDF" export feature
+
 ## 0.3.0
 
 - Settings: text style, keyboard shortcuts.

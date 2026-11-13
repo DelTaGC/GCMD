@@ -7,6 +7,8 @@
  */
 import type { EditorState } from "@codemirror/state";
 import type { SyntaxNode, SyntaxNodeRef } from "@lezer/common";
+import { isPrinting } from "../print";
+import { headingId } from "../printLinks";
 import { isActive } from "./activeBlock";
 import { livePreviewFamily, type Collector, type NodeVisitor } from "./decorate";
 
@@ -31,11 +33,23 @@ function hideAtxMarks(node: SyntaxNode, state: EditorState, out: Collector): voi
   }
 }
 
+/**
+ * Print mode only: the heading line carries its GitHub anchor as `id`, the
+ * target of `[text](#anchor)` links in the PDF (`editor/printLinks.ts`).
+ */
+function anchorAttributes(state: EditorState, from: number): Record<string, string> | undefined {
+  if (!isPrinting(state)) {
+    return undefined;
+  }
+  const id = headingId(state, from);
+  return id === undefined ? undefined : { id };
+}
+
 export const visitHeadings: NodeVisitor = (ref: SyntaxNodeRef, state, out) => {
   const atx = ATX.exec(ref.name);
   if (atx) {
     const level = atx[1] ?? "1";
-    out.line(ref.from, `cm-heading cm-heading-${level}`);
+    out.line(ref.from, `cm-heading cm-heading-${level}`, anchorAttributes(state, ref.from));
     if (isActive(state, ref.from, ref.to)) {
       for (const mark of ref.node.getChildren("HeaderMark")) {
         out.mark(mark.from, mark.to, "cm-mark");
@@ -53,7 +67,11 @@ export const visitHeadings: NodeVisitor = (ref: SyntaxNodeRef, state, out) => {
     const textEnd = underline ? state.doc.lineAt(underline.from).from - 1 : ref.to;
     for (let pos = ref.from; pos <= textEnd;) {
       const line = state.doc.lineAt(pos);
-      out.line(line.from, `cm-heading cm-heading-${level}`);
+      out.line(
+        line.from,
+        `cm-heading cm-heading-${level}`,
+        pos === ref.from ? anchorAttributes(state, ref.from) : undefined,
+      );
       pos = line.to + 1;
     }
     if (underline) {

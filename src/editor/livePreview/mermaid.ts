@@ -9,10 +9,15 @@
 import type { EditorState } from "@codemirror/state";
 import { WidgetType, type EditorView } from "@codemirror/view";
 import type { SyntaxNodeRef } from "@lezer/common";
-import { cachedMermaid, renderMermaid, type MermaidResult } from "../mermaid/render";
+import {
+  cachedMermaid,
+  renderMermaid,
+  reserveMermaidCache,
+  type MermaidResult,
+} from "../mermaid/render";
 import { isDark } from "../theme";
 import { infoLanguage } from "./codeFence";
-import { blockFamily, type BlockVisitor } from "./decorate";
+import { blockFamily, collectBlocks, type BlockVisitor } from "./decorate";
 
 export class MermaidWidget extends WidgetType {
   constructor(
@@ -128,3 +133,21 @@ export const visitMermaidBlocks: BlockVisitor = (ref, state, blocks) => {
 };
 
 export const mermaid = blockFamily(visitMermaidBlocks);
+
+/**
+ * Renders every diagram of the document into the cache, so that widgets
+ * created later (printing draws the whole document at once) fill
+ * synchronously instead of showing the placeholder.
+ */
+export async function renderAllDiagrams(state: EditorState): Promise<void> {
+  const blocks = collectBlocks(state, visitMermaidBlocks);
+  // Light and dark results share the cache, hence twice the diagrams.
+  reserveMermaidCache(blocks.length * 2);
+  const pending: Promise<unknown>[] = [];
+  for (const block of blocks) {
+    if (block.widget instanceof MermaidWidget) {
+      pending.push(renderMermaid(block.widget.source, block.widget.dark));
+    }
+  }
+  await Promise.all(pending);
+}

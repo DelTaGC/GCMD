@@ -37,6 +37,7 @@ import {
   type WidgetType,
 } from "@codemirror/view";
 import type { SyntaxNodeRef } from "@lezer/common";
+import { isPrinting } from "../print";
 import { editorDark } from "../theme";
 import { isActive } from "./activeBlock";
 
@@ -73,20 +74,36 @@ export class Collector {
 
   private readonly lineKeys = new Set<string>();
 
-  /** Styles `[from, to)` with a CSS class. Empty ranges are ignored. */
-  mark(from: number, to: number, className: string, attributes?: Record<string, string>): void {
+  /**
+   * Styles `[from, to)` with a CSS class, as a `tagName` element instead of
+   * a span when given. Empty ranges are ignored.
+   */
+  mark(
+    from: number,
+    to: number,
+    className: string,
+    attributes?: Record<string, string>,
+    tagName?: string,
+  ): void {
     if (to > from) {
-      const spec = attributes ? { class: className, attributes } : { class: className };
+      // One spec object per mark, as before print links: this runs while typing.
+      const spec =
+        tagName !== undefined
+          ? { class: className, attributes: attributes ?? {}, tagName }
+          : attributes
+            ? { class: className, attributes }
+            : { class: className };
       this.all.push(Decoration.mark(spec).range(from, to));
     }
   }
 
   /** Adds a class to the line containing `pos`; duplicates are dropped. */
-  line(pos: number, className: string): void {
+  line(pos: number, className: string, attributes?: Record<string, string>): void {
     const key = `${String(pos)}:${className}`;
     if (!this.lineKeys.has(key)) {
       this.lineKeys.add(key);
-      this.all.push(Decoration.line({ class: className }).range(pos));
+      const spec = attributes ? { class: className, attributes } : { class: className };
+      this.all.push(Decoration.line(spec).range(pos));
     }
   }
 
@@ -160,6 +177,7 @@ export function livePreviewFamily(visit: NodeVisitor): Extension {
           update.viewportChanged ||
           update.selectionSet ||
           syntaxTree(update.state) !== syntaxTree(update.startState) ||
+          isPrinting(update.state) !== isPrinting(update.startState) ||
           hasRefresh(update.transactions)
         ) {
           const out = computeFamily(update.state, update.view.visibleRanges, visit);
@@ -254,6 +272,7 @@ export function blockFamily(visit: BlockVisitor): Extension {
         tr.docChanged ||
         syntaxTree(tr.state) !== syntaxTree(tr.startState) ||
         tr.state.facet(editorDark) !== tr.startState.facet(editorDark) ||
+        isPrinting(tr.state) !== isPrinting(tr.startState) ||
         hasRefresh([tr])
       ) {
         return compute(tr.state);

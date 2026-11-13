@@ -7,6 +7,7 @@
  *
  * The `<img>` element helper is shared with table cells (`inlineDom.ts`).
  */
+import { syntaxTree } from "@codemirror/language";
 import type { EditorState } from "@codemirror/state";
 import { WidgetType, type EditorView } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
@@ -14,14 +15,21 @@ import { currentDocumentPath } from "../document";
 import { isTauri } from "../../ipc/env";
 import { resolveAssetUrl } from "../../ipc/paths";
 
-const REMOTE = /^[a-z][a-z0-9+.-]*:/i;
+const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+/** True for a Windows path with a drive letter (`C:\dir\file`, `C:/dir`). */
+export function isDrivePath(href: string): boolean {
+  return /^[a-z]:[\\/]/i.test(href);
+}
 
 /** True for `http://`, `https://`, `mailto:` and other non-file schemes. */
 export function isRemote(href: string): boolean {
-  return REMOTE.test(href) && !/^file:/i.test(href) && !/^[a-z]:[\\/]/i.test(href);
+  return SCHEME.test(href) && !/^file:/i.test(href) && !isDrivePath(href);
 }
 
 const resolved = new Map<string, Promise<string | null>>();
+/** Resolved URLs kept; `loadImages` raises it for a document with more images. */
+let maxResolved = 500;
 
 /** URL usable as `<img src>` for `href` relative to `documentPath`, or null. */
 export function imageUrl(documentPath: string | null, href: string): Promise<string | null> {
@@ -37,7 +45,7 @@ export function imageUrl(documentPath: string | null, href: string): Promise<str
   if (!pending) {
     pending = resolveAssetUrl(documentPath, href).catch(() => null);
     resolved.set(key, pending);
-    if (resolved.size > 500) {
+    if (resolved.size > maxResolved) {
       const oldest = resolved.keys().next().value;
       if (oldest !== undefined) {
         resolved.delete(oldest);
@@ -141,6 +149,65 @@ export function imageSpec(node: SyntaxNode, state: EditorState): ImageSpec | nul
   const titleNode = node.getChild("LinkTitle");
   const title = titleNode ? state.doc.sliceString(titleNode.from + 1, titleNode.to - 1) : "";
   return { href: state.doc.sliceString(url.from, url.to), alt, title };
+}
+
+/** Hrefs of the local images in the document, each once. */
+export function localImageHrefs(state: EditorState): string[] {
+  const hrefs = new Set<string>();
+  syntaxTree(state).iterate({
+    enter: (ref) => {
+      if (ref.name !== "Image") {
+        return undefined;
+      }
+      const spec = imageSpec(ref.node, state);
+      if (spec && !isRemote(spec.href)) {
+        hrefs.add(spec.href);
+      }
+      return false;
+    },
+  });
+  return [...hrefs];
+}
+
+/** Keeps the last preloaded pictures alive so the browser cache holds them. */
+const preloaded: HTMLImageElement[] = [];
+
+/**
+ * Resolves and downloads every local image of the document. Widgets created
+ * afterwards (printing draws the whole document at once) then show their
+ * picture from the cache without waiting.
+ */
+export async function loadImages(state: EditorState): Promise<void> {
+  const documentPath = currentDocumentPath(state);
+  const hrefs = localImageHrefs(state);
+  // None of them may be evicted again before the page is drawn.
+  maxResolved = Math.max(maxResolved, hrefs.length);
+  const images: HTMLImageElement[] = [];
+  await Promise.all(
+    hrefs.map(async (href) => {
+      const url = await imageUrl(documentPath, href);
+      if (url === null) {
+        return;
+      }
+      await new Promise<void>((resolve) => {
+        const img = new Image();
+        img.addEventListener("load", () => {
+          resolve();
+        });
+        img.addEventListener("error", () => {
+          resolve();
+        });
+        img.src = url;
+        images.push(img);
+      });
+    }),
+  );
+  preloaded.splice(0, preloaded.length, ...images);
+}
+
+/** Lets go of the pictures `loadImages` kept alive, once the printout is done. */
+export function releaseImages(): void {
+  preloaded.length = 0;
 }
 
 /** Widget for the `Image` node, or null when it cannot be rendered inline. */

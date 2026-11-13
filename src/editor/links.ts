@@ -126,6 +126,14 @@ export const linkOpener: Extension = [
       });
       return true;
     },
+    click(event) {
+      // Print mode draws links as real anchors (`printLinks.ts`); the
+      // webview must never navigate away from the editor.
+      if (event.target instanceof Element && event.target.closest("a[href]")) {
+        event.preventDefault();
+      }
+      return false;
+    },
     keydown(event, view) {
       if (event.key === "Control" || event.key === "Meta") {
         view.dom.classList.add(CTRL_CLASS);

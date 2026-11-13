@@ -104,6 +104,8 @@ export const shortcuts: readonly Shortcut[] = [
   // File and window (registered by app/session.ts; file.settings by app/settings.ts)
   { key: "Mod-s", command: "file.save" },
   { key: "Mod-Shift-s", command: "file.saveAs" },
+  // Registered by app/print.ts.
+  { key: "Mod-p", command: "file.print" },
   { key: "Mod-o", command: "file.open" },
   { key: "Mod-n", command: "file.new" },
   { key: "Mod-Shift-n", command: "file.newWindow" },

@@ -1,4 +1,6 @@
+import { EditorSelection, EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
+import { isPrinting, printExtension } from "../print";
 import { stateWith } from "../testing";
 import { isActive, lineSpan, selectionTouches } from "./activeBlock";
 
@@ -51,5 +53,23 @@ describe("isActive", () => {
     expect(isActive(stateWith(fence, 25), 5, 25)).toBe(true);
     expect(isActive(stateWith(fence, 26), 5, 25)).toBe(false);
     expect(isActive(stateWith(fence, 4), 5, 25)).toBe(false);
+  });
+});
+
+describe("print mode", () => {
+  it("leaves no block active, so the whole document prints rendered", () => {
+    const state = EditorState.create({
+      doc,
+      selection: EditorSelection.cursor(20),
+      extensions: [printExtension(true)],
+    });
+    expect(isPrinting(state)).toBe(true);
+    expect(isActive(state, 18, 26)).toBe(false);
+  });
+
+  it("is off by default", () => {
+    const state = EditorState.create({ doc, extensions: [printExtension()] });
+    expect(isPrinting(state)).toBe(false);
+    expect(isActive(stateWith(doc, 20), 18, 26)).toBe(true);
   });
 });

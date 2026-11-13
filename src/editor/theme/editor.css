@@ -602,3 +602,67 @@
 .cm-tablebar-align {
   max-width: 6rem;
 }
+
+/*
+ * Printing (app/print.ts). Every line is drawn while printing; these
+ * rules turn the scrolling editor into a plain flowing block that the browser
+ * can paginate, and hide everything that is editing UI. The `!important`
+ * rules override inline styles CodeMirror or editor/wrap.ts set for the
+ * screen layout.
+ */
+@media print {
+  .cm-editor {
+    display: block !important;
+    height: auto;
+    /* Backgrounds (code blocks, table headers) are part of the document. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .cm-editor .cm-scroller {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  /* The page margins replace the wrap margin; lines always wrap on paper. */
+  .cm-editor .cm-content {
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0;
+    white-space: break-spaces;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .cm-editor .cm-cursorLayer,
+  .cm-editor .cm-selectionLayer,
+  .cm-editor .cm-dropCursor,
+  .cm-editor .cm-panels,
+  .cm-editor .cm-tooltip,
+  .cm-table-handle,
+  .cm-table-guide {
+    display: none !important;
+  }
+  .cm-editor .cm-searchMatch,
+  .cm-editor .cm-searchMatch-selected,
+  .cm-editor .cm-selectionMatch {
+    background: none;
+  }
+  /* The language dropdown prints as a plain label. */
+  .cm-code-select {
+    background-image: none;
+    padding: 0;
+  }
+  /* A heading stays with what follows it, across the blank line between. */
+  .cm-heading,
+  .cm-heading + .cm-line {
+    break-after: avoid;
+  }
+  .cm-table-widget tr,
+  .cm-mermaid,
+  .cm-image-widget {
+    break-inside: avoid;
+  }
+  .cm-table-scroll {
+    overflow: visible;
+  }
+}

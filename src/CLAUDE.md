@@ -88,6 +88,37 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   browser dev page supply their own) and offers `#` anchors from
   `editor/outline.ts`. Its keys are chained into the existing Enter, Tab,
   arrow, Page and Escape commands, so the keymap keeps one command per key.
+- Print and PDF export: `app/print.ts` registers `file.print` (Ctrl+P),
+  which prints the live preview through the system print dialog; saving a
+  PDF is the dialog's job, and there is no second renderer. Before the
+  dialog opens it forces the light theme (`ThemeController.setOverride`),
+  turns on print mode (`editor/print.ts`: `isActive` is false everywhere),
+  parses the whole document, loads every fence language, diagram and image
+  (`loadFenceLanguages`, `renderAllDiagrams`, `loadImages` in their
+  families), then draws every line with `drawWholeDocument`. That last step
+  sets CodeMirror's internal `viewState.printing`: CodeMirror only expands
+  its viewport once the print media query matches, after Chromium has
+  counted the pages, which cuts long documents short. The switch is pinned
+  while printing (an accessor that always reads true), because CodeMirror's
+  own handler turns it off after 500 ms, which a native print sheet that
+  does not pause scripts (macOS) would let happen. Re-check it when
+  upgrading `@codemirror/view` (a warning is logged if the switch is gone).
+  The page layout is the `@media print` blocks at the end of `styles.css`
+  and `editor/theme/editor.css`; new chrome must be hidden there, and a new
+  lazily loaded widget needs a preload step in `app/print.ts`.
+  `ipc/window.ts` `printWindow` is `window.print()` except on macOS, where
+  `WKWebView` ignores it and the Rust `print_window` command is used.
+- Links in the printout: only in print mode, the inline family marks links
+  as `<a href>` (`Collector.mark` with a tag name), table cells build
+  anchors (`InlineContext.printHref`, `TableWidget.printing` is part of
+  `eq`) and heading lines carry their GitHub anchor as `id`, so the
+  browser's "Save as PDF" writes clickable links and `#heading` jumps (a
+  printer driver such as "Microsoft Print to PDF" drops them). The targets
+  are pure functions in `editor/printLinks.ts`: web and mail as Ctrl+click
+  opens them, file paths as absolute `file://` URLs, reference links
+  through their definition, anything else stays styled text. On screen
+  links are never anchors; `links.ts` also cancels clicks on `a[href]` so
+  the webview cannot navigate away.
 - `ipc/`: the only module allowed to import `@tauri-apps/api` or plugins.
   Each Rust command gets a typed wrapper function with the same name.
 - `chrome/`: plain DOM builders returning an element plus an `update()`;

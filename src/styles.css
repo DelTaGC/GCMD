@@ -498,3 +498,32 @@ p.settings-hint {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/*
+ * Printing (app/print.ts): only the document prints, on as many pages as it
+ * needs. The editor's own print rules are in src/editor/theme/editor.css.
+ */
+@page {
+  margin: 18mm 16mm;
+}
+@media print {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+  }
+  #app {
+    display: block;
+    height: auto;
+  }
+  .editor-host {
+    overflow: visible;
+  }
+  .banner,
+  .sidebar,
+  .wrap-bar,
+  .zoom-badge,
+  .settings-overlay {
+    display: none !important;
+  }
+}

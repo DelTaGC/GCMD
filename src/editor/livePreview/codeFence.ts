@@ -15,10 +15,10 @@
  * language here, once its parser has loaded (a refresh is dispatched when it
  * does). Mermaid fences are owned by `mermaid.ts` while inactive.
  */
-import type { LanguageDescription } from "@codemirror/language";
+import { syntaxTree, type LanguageDescription } from "@codemirror/language";
 import type { EditorState, Extension } from "@codemirror/state";
 import { ViewPlugin, WidgetType, type EditorView } from "@codemirror/view";
-import type { SyntaxNodeRef, Tree } from "@lezer/common";
+import type { SyntaxNode, SyntaxNodeRef, Tree } from "@lezer/common";
 import { classHighlighter, highlightTree } from "@lezer/highlight";
 import { detectLanguage, type DetectedLanguage } from "../../detect/detectLanguage";
 import { setFenceLanguageAt } from "../commands/code";
@@ -192,6 +192,58 @@ function requestLoad(desc: LanguageDescription): void {
   );
 }
 
+/**
+ * The heuristic's guess for a fence: only an unlabeled fence with content is
+ * guessed, a labeled one says what it is. The one rule for what gets
+ * auto-detected, shared by the decoration and the print preload.
+ */
+function detectedLanguage(
+  node: SyntaxNode,
+  state: EditorState,
+  language: string,
+): DetectedLanguage | null {
+  const text = node.getChild("CodeText");
+  return language === "" && text
+    ? detectFenceLanguage(state.doc.sliceString(text.from, text.to))
+    : null;
+}
+
+/** The languages the document's fences name, or are detected as. */
+export function fenceLanguages(state: EditorState): LanguageDescription[] {
+  const found = new Set<LanguageDescription>();
+  syntaxTree(state).iterate({
+    enter: (ref) => {
+      if (ref.name !== "FencedCode") {
+        return undefined;
+      }
+      const info = ref.node.getChild("CodeInfo");
+      const word = info ? infoLanguage(state.doc.sliceString(info.from, info.to)) : "";
+      const detected = detectedLanguage(ref.node, state, word);
+      const desc = detected === null ? describeLanguage(word) : languageByName(detected);
+      if (desc) {
+        found.add(desc);
+      }
+      return false;
+    },
+  });
+  return [...found];
+}
+
+/**
+ * Loads the parser of every fence language in the document. Fences outside
+ * the viewport are otherwise highlighted only once they scroll into view,
+ * which is too late when printing.
+ */
+export async function loadFenceLanguages(state: EditorState): Promise<void> {
+  await Promise.all(
+    fenceLanguages(state).map((desc) =>
+      desc.load().catch((err: unknown) => {
+        console.warn(`language ${desc.name} failed to load`, err);
+      }),
+    ),
+  );
+}
+
 /** Highlights `[from, from + text.length)` with `desc`, per line. */
 function highlightWith(
   desc: LanguageDescription,
@@ -258,15 +310,11 @@ function decorateFence(ref: SyntaxNodeRef, state: EditorState, out: Collector): 
     }
     return;
   }
-  let detected: DetectedLanguage | null = null;
+  const detected = detectedLanguage(node, state, language);
   const text = node.getChild("CodeText");
-  if (language === "" && text) {
-    const code = state.doc.sliceString(text.from, text.to);
-    detected = detectFenceLanguage(code);
-    const desc = detected === null ? null : languageByName(detected);
-    if (desc) {
-      highlightWith(desc, code, text.from, state, out);
-    }
+  const desc = detected === null ? null : languageByName(detected);
+  if (desc && text) {
+    highlightWith(desc, state.doc.sliceString(text.from, text.to), text.from, state, out);
   }
   out.replace(openLine.from, openLine.to, new LanguageSelectWidget(language, detected));
   if (closeLine !== null && closeLine.number !== openLine.number) {

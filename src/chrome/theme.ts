@@ -21,6 +21,11 @@ export interface ThemeController {
   /** Current effective theme. */
   readonly resolved: ResolvedTheme;
   set(pref: ThemePreference): void;
+  /**
+   * Forces the effective theme regardless of the preference (printing is
+   * always light); `null` returns to the preference.
+   */
+  setOverride(theme: ResolvedTheme | null): void;
   /** Called whenever the effective theme changes. */
   onChange(listener: (resolved: ResolvedTheme) => void): void;
 }
@@ -28,11 +33,12 @@ export interface ThemeController {
 export function createThemeController(initial: ThemePreference): ThemeController {
   const media = window.matchMedia(query);
   let preference = initial;
+  let override: ResolvedTheme | null = null;
   let resolved = resolveTheme(preference, media.matches);
   const listeners: ((resolved: ResolvedTheme) => void)[] = [];
 
   const apply = (): void => {
-    const next = resolveTheme(preference, media.matches);
+    const next = override ?? resolveTheme(preference, media.matches);
     document.documentElement.dataset["theme"] = next;
     if (next !== resolved) {
       resolved = next;
@@ -54,6 +60,10 @@ export function createThemeController(initial: ThemePreference): ThemeController
     },
     set(pref: ThemePreference): void {
       preference = pref;
+      apply();
+    },
+    setOverride(theme): void {
+      override = theme;
       apply();
     },
     onChange(listener): void {

@@ -4,6 +4,7 @@
  */
 import type { ViewUpdate } from "@codemirror/view";
 import { createOutlineController } from "./app/outline";
+import { createPrintController } from "./app/print";
 import { createSession } from "./app/session";
 import { createSettingsController } from "./app/settings";
 import { createUpdateController } from "./app/updates";
@@ -121,6 +122,7 @@ async function bootstrap(): Promise<void> {
       wrap.refresh();
     },
   });
+  const printer = createPrintController({ view, theme });
   hooks.onUpdate = (update) => {
     current.onEditorUpdate(update);
     outline.onEditorUpdate(update);
@@ -139,6 +141,7 @@ async function bootstrap(): Promise<void> {
         wrap,
         zoom,
         preferences,
+        printer,
         replaceDocument,
       },
     });

@@ -119,6 +119,8 @@ fn file_menu<R: Runtime>(app: &AppHandle<R>, settings: &Settings) -> tauri::Resu
             &PredefinedMenuItem::separator(app)?,
             &item(app, "file.save", "&Save", Some("CmdOrCtrl+S"))?,
             &item(app, "file.saveAs", "Save &As...", Some("CmdOrCtrl+Shift+S"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &item(app, "file.print", "&Print...", Some("CmdOrCtrl+P"))?,
         ],
     )?;
     // On macOS, Settings and Quit live in the application menu.
