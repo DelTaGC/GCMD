@@ -21,7 +21,7 @@ jobs:
           - os: ubuntu-22.04
             args: --bundles deb,appimage
           # One universal build serves Intel and Apple silicon Macs.
-          - os: macos-14
+          - os: macos-15
             args: --target universal-apple-darwin --bundles app,dmg
           - os: windows-2022
             args: --bundles nsis
