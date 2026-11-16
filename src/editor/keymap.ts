@@ -73,6 +73,9 @@ export const shortcuts: readonly Shortcut[] = [
   { key: "Ctrl-Space", command: "completion.start" },
   // Lists, tables and code
   { key: "Mod-l", command: "list.toggleTask" },
+  // Ctrl+Shift+8 as in Google Docs; CodeMirror falls back to the digit
+  // when Shift+8 types another character (`(` on Swiss-French).
+  { key: "Mod-Shift-8", command: "list.toggleBullets" },
   { key: "Shift-Alt-f", command: "table.align" },
   // Ctrl+Enter keeps its base meaning (blank line below) outside tables.
   { key: "Mod-Enter", command: "table.insertRowBelow" },

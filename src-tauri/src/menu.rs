@@ -201,6 +201,15 @@ fn table_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
         "&Table",
         true,
         &[
+            &item(app, "table.insert", "&Insert Table", None)?,
+            &item(
+                app,
+                "table.fromSelection",
+                "Con&vert Selection to Table",
+                None,
+            )?,
+            &item(app, "table.toList", "Convert Table to Li&st", None)?,
+            &PredefinedMenuItem::separator(app)?,
             &item(
                 app,
                 "table.insertRowAbove",
@@ -295,6 +304,12 @@ fn edit_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Submenu<R>> {
         &table_submenu(app)?,
         &PredefinedMenuItem::separator(app)?,
         &item(app, "list.toggleTask", "Toggle &Task", Some("CmdOrCtrl+L"))?,
+        &item(
+            app,
+            "list.toggleBullets",
+            "Toggle &Bullet List",
+            Some("CmdOrCtrl+Shift+8"),
+        )?,
         &item(
             app,
             "code.detectLanguage",

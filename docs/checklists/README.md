@@ -4,16 +4,17 @@ Logic is unit-tested; UI behavior is verified by walking these lists in the
 running app (`npm run app:dev`) with `tests/fixtures/sample.md` open, in both
 the light and the dark theme. Each phase adds a file; keep old ones passing.
 
-| File                                           | Covers                                               |
-| ---------------------------------------------- | ---------------------------------------------------- |
-| [phase-1-foundation.md](phase-1-foundation.md) | Window opens, tooling and hooks work                 |
-| [phase-2-editor.md](phase-2-editor.md)         | Open/save fidelity, live preview, shortcuts, themes  |
-| [phase-3-blocks.md](phase-3-blocks.md)         | Tables, mermaid, fence languages, images, Ctrl+click |
-| [phase-4-navigation.md](phase-4-navigation.md) | Outline sidebar, quickbar, external changes, menus   |
-| [phase-5-quality.md](phase-5-quality.md)       | Performance by feel, Linux and macOS, spec harness   |
-| [phase-6-updates.md](phase-6-updates.md)       | Update banner, install flow, other windows, settings |
-| [lists-and-wrap.md](lists-and-wrap.md)         | List nesting and renumbering, line wrap bar and menu |
-| [link-completion.md](link-completion.md)       | Path and `#heading` completion in link destinations  |
-| [zoom.md](zoom.md)                             | Text size: Ctrl+wheel, keys, View > Zoom, badge      |
-| [phase-7-settings.md](phase-7-settings.md)     | Settings panel, shortcuts editor, spell-check        |
-| [print.md](print.md)                           | File > Print, PDF from the print dialog, page layout |
+| File                                           | Covers                                                  |
+| ---------------------------------------------- | ------------------------------------------------------- |
+| [phase-1-foundation.md](phase-1-foundation.md) | Window opens, tooling and hooks work                    |
+| [phase-2-editor.md](phase-2-editor.md)         | Open/save fidelity, live preview, shortcuts, themes     |
+| [phase-3-blocks.md](phase-3-blocks.md)         | Tables, mermaid, fence languages, images, Ctrl+click    |
+| [phase-4-navigation.md](phase-4-navigation.md) | Outline sidebar, quickbar, external changes, menus      |
+| [phase-5-quality.md](phase-5-quality.md)       | Performance by feel, Linux and macOS, spec harness      |
+| [phase-6-updates.md](phase-6-updates.md)       | Update banner, install flow, other windows, settings    |
+| [lists-and-wrap.md](lists-and-wrap.md)         | List nesting, bullet toggle, line wrap bar and menu     |
+| [link-completion.md](link-completion.md)       | Path and `#heading` completion in link destinations     |
+| [zoom.md](zoom.md)                             | Text size: Ctrl+wheel, keys, View > Zoom, badge         |
+| [phase-7-settings.md](phase-7-settings.md)     | Settings panel, shortcuts editor, spell-check           |
+| [print.md](print.md)                           | File > Print, PDF from the print dialog, page layout    |
+| [table-convert.md](table-convert.md)           | Insert Table, selection or list to table, table to list |

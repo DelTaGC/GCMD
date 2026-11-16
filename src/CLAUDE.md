@@ -40,6 +40,10 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   renumbered in the same transaction. A list's first item keeps its number
   unless it was not a list head before the edit (then 1); lazy `1. 1. 1.`
   lists stay lazy. Items inside blockquotes fall back to plain indent.
+  `editor/commands/lists.ts` holds the whole-line toggles: `list.toggleTask`
+  (Ctrl+L) and `list.toggleBullets` (Ctrl+Shift+8: one `- ` item per text
+  line, blank lines between them dropped, code and tables skipped; off
+  again when every line is already an item).
 - Line wrap: `app/wrap.ts` owns the wrap settings (`off`, `full`, `fixed`),
   computes the text column with the pure rules in `app/wrapLayout.ts`,
   applies it through `editor/wrap.ts` (a `lineWrapping` compartment plus
@@ -70,6 +74,14 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   their pipes in the same columns) means padded, otherwise compact. The
   realign on leaving an edited table (`livePreview/table.ts`) also skips
   compact tables; only Shift+Alt+F converts one.
+- `editor/commands/tableConvert.ts` creates tables and converts them:
+  `table.insert` (empty 2x2), `table.fromSelection` (quickbar Table button;
+  a list gives one row per leaf and one column per nesting level,
+  tab-separated lines split into columns, other lines one cell each) and
+  `table.toList` (the reverse). The rules are pure functions over strings
+  and a `Grid`; the commands always write the aligned style and keep a
+  blank line around the table. There is no right-click entry: the context
+  menu is WebView2's own (ADR 0014, "Right-click menu").
 - `app/settings.ts` owns the Phase 7 settings (ADR 0014): appearance
   (`app/appearance.ts` writes CSS variables into one `<style>`), keymap
   overrides (`editor/keymap.ts` `setKeymapOverrides` reconfigures the

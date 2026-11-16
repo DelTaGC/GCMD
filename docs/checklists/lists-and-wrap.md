@@ -19,6 +19,17 @@ in both themes. Numbering logic is unit-tested in
 - [ ] Going from `9.` to `10.` (Enter in a 9-item list) keeps the children of the renumbered item nested.
 - [ ] Ctrl+Z undoes a Tab or Shift+Tab, including the renumbering, in one step.
 
+## Bullet list toggle
+
+The rules are unit-tested in `src/editor/commands/lists.test.ts`.
+
+- [ ] Edit > Toggle Bullet List shows Ctrl+Shift+8; Ctrl+Shift+8 works on the Swiss-French keyboard (Shift+8 types `(`).
+- [ ] Selecting three lines of one paragraph and pressing Ctrl+Shift+8 gives three items; selecting three paragraphs gives three items of one tight list (the blank lines between them are gone).
+- [ ] With no selection only the cursor's line becomes an item; the paragraph line after it is moved apart by a blank line instead of joining the item.
+- [ ] Pressing Ctrl+Shift+8 again on the same lines removes the markers (and task boxes).
+- [ ] Code blocks and tables inside the selection are unchanged; quoted lines keep their `>`.
+- [ ] One Ctrl+Z undoes the whole toggle.
+
 ## Line wrap
 
 - [ ] A thin bar under the editor: light margins, darker text column lined up with the text; the tooltip names the mode.

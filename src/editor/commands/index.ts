@@ -50,7 +50,7 @@ import {
   outdentListItemBackward,
   withRenumber,
 } from "./listItems";
-import { toggleTask } from "./lists";
+import { toggleBullets, toggleTask } from "./lists";
 import { defineCommand, type CommandDef, type CommandRunner } from "./registry";
 import {
   alignColumn,
@@ -67,6 +67,7 @@ import {
   nextRow,
   prevCell,
 } from "./table";
+import { insertTable, tableFromSelection, tableToList } from "./tableConvert";
 import { dismissTableBar, tableBarVisible } from "../tableBar";
 
 /** Hides the quickbar; false when it is not showing so Escape falls through. */
@@ -112,6 +113,7 @@ export const editorCommands: readonly CommandDef[] = [
     run: clearFormatting,
   }),
   defineCommand({ id: "list.toggleTask", title: "Toggle task", run: toggleTask }),
+  defineCommand({ id: "list.toggleBullets", title: "Toggle bullet list", run: toggleBullets }),
   defineCommand({ id: "format.paragraph", title: "Paragraph", run: setHeadingLevel(0) }),
   defineCommand({ id: "format.heading1", title: "Heading 1", run: setHeadingLevel(1) }),
   defineCommand({ id: "format.heading2", title: "Heading 2", run: setHeadingLevel(2) }),
@@ -143,6 +145,13 @@ export const editorCommands: readonly CommandDef[] = [
   defineCommand({ id: "table.prevCell", title: "Previous table cell", run: prevCell }),
   defineCommand({ id: "table.nextRow", title: "Next table row", run: nextRow }),
   defineCommand({ id: "table.align", title: "Align table", run: alignTable }),
+  defineCommand({ id: "table.insert", title: "Insert table", run: insertTable }),
+  defineCommand({
+    id: "table.fromSelection",
+    title: "Convert selection to table",
+    run: tableFromSelection,
+  }),
+  defineCommand({ id: "table.toList", title: "Convert table to list", run: tableToList }),
   defineCommand({
     id: "table.insertRowAbove",
     title: "Insert row above",

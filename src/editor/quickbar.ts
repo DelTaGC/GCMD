@@ -82,6 +82,12 @@ export const QUICKBAR_BUTTONS: readonly Button[] = [
     title: "Clear formatting",
     className: "cm-quickbar-clear",
   },
+  {
+    command: "table.fromSelection",
+    label: "Table",
+    title: "Convert to table",
+    className: "cm-quickbar-table",
+  },
 ];
 
 const HEADING_OPTIONS: readonly { value: string; label: string }[] = [

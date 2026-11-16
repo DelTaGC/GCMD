@@ -64,6 +64,7 @@ describe("quickbar buttons", () => {
       "format.strikethrough",
       "format.link",
       "format.clearFormatting",
+      "table.fromSelection",
     ]);
   });
 });
