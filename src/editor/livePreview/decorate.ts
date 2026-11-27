@@ -21,6 +21,7 @@
 import { syntaxTree } from "@codemirror/language";
 import {
   Facet,
+  Prec,
   StateEffect,
   StateField,
   type EditorState,
@@ -158,7 +159,15 @@ export function computeFamily(
   return out.finish();
 }
 
-/** Wraps a family computation into a view plugin plus atomic ranges. */
+/**
+ * Wraps a family computation into a view plugin plus atomic ranges.
+ *
+ * `Prec.lowest` is about nesting: a mark of lower precedence wraps the ones
+ * above it, and the search highlighter is `Prec.low`. Family marks must wrap
+ * search matches. Otherwise a match splits the mark around it, which repeats
+ * the inline-code padding as gaps and paints its background over the
+ * highlight. Among themselves, families keep the order of `index.ts`.
+ */
 export function livePreviewFamily(visit: NodeVisitor): Extension {
   const plugin = ViewPlugin.fromClass(
     class {
@@ -192,7 +201,7 @@ export function livePreviewFamily(visit: NodeVisitor): Extension {
         EditorView.atomicRanges.of((view) => view.plugin(self)?.atomic ?? Decoration.none),
     },
   );
-  return plugin;
+  return Prec.lowest(plugin);
 }
 
 // ---------------------------------------------------------------------------

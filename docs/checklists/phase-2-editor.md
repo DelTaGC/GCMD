@@ -28,7 +28,7 @@ and again after switching the theme (View > Theme).
 - [ ] Bold, italic, bold-italic, strikethrough and inline code hide their markers off-line and show them on-line.
 - [ ] Links show only the text (underlined); hovering shows the URL; the active line shows the full `[text](url)`.
 - [ ] Bare URLs, `www.` links and emails are styled as links.
-- [ ] Bullets render as `•`; ordered markers stay as typed; the active line shows the raw marker.
+- [ ] Bullets render as `•` at the first level and `◦` deeper (also under an ordered list); ordered markers stay as typed; the active line shows the raw marker.
 - [ ] Task items show a checkbox; clicking it toggles `[ ]`/`[x]` in the text without moving the cursor; done tasks are struck through.
 - [ ] Blockquotes have a left border and hide their `>` markers; the active line shows them.
 - [ ] `---`, `***`, `___` render as rules; the active line shows the characters.
@@ -49,6 +49,8 @@ and again after switching the theme (View > Theme).
 - [ ] Enter continues lists, task lists and quotes; Backspace on an empty item removes the marker.
 - [ ] Tab / Shift+Tab indent and outdent list items (nesting and numbering details: lists-and-wrap.md).
 - [ ] Ctrl+F opens find; Ctrl+H opens find with replace; F3 / Shift+F3 step through matches; Escape closes the panel.
+- [ ] Searching for text inside inline code highlights the match inside the code box; the text does not move and no gaps appear around the match.
+- [ ] Searching tints each rendered table cell that holds a match, follows the query and the match options as they change, clears when the panel closes, and does not print.
 - [ ] Ctrl+Z / Ctrl+Y undo and redo; Edit > Undo / Redo do the same.
 - [ ] Alt+F / Alt+E / Alt+V / Alt+H open the matching menu while the editor has focus; arrows, letters and Escape then work inside it.
 - [ ] The backtick, `^`, `¨` and `´` dead keys type their characters normally.

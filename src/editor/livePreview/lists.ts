@@ -2,7 +2,7 @@
  * Lists and task items.
  *
  * Bullet markers (`-`, `*`, `+`) are replaced by a bullet glyph when the line
- * is not active; ordered markers are muted. On the active line every marker
+ * is not active (`•` at the first level, `◦` deeper); ordered markers are muted. On the active line every marker
  * shows in the markup color. Task markers (`[ ]` / `[x]`)
  * become a real checkbox when the line is not active. Clicking the checkbox
  * toggles the marker in the text through a normal transaction without moving
@@ -10,19 +10,23 @@
  */
 import type { EditorState, TransactionSpec } from "@codemirror/state";
 import { WidgetType, type EditorView } from "@codemirror/view";
-import type { SyntaxNodeRef } from "@lezer/common";
+import type { SyntaxNode, SyntaxNodeRef } from "@lezer/common";
 import { isActive } from "./activeBlock";
 import { livePreviewFamily, type Collector, type NodeVisitor } from "./decorate";
 
-class BulletWidget extends WidgetType {
-  override eq(): boolean {
-    return true;
+export class BulletWidget extends WidgetType {
+  constructor(readonly glyph: string) {
+    super();
+  }
+
+  override eq(other: BulletWidget): boolean {
+    return other.glyph === this.glyph;
   }
 
   override toDOM(): HTMLElement {
     const span = document.createElement("span");
     span.className = "cm-bullet";
-    span.textContent = "•";
+    span.textContent = this.glyph;
     return span;
   }
 
@@ -31,7 +35,18 @@ class BulletWidget extends WidgetType {
   }
 }
 
-const bullet = new BulletWidget();
+const bullet = new BulletWidget("•");
+const nestedBullet = new BulletWidget("◦");
+
+/** Whether `list` sits inside another list, ordered or not. */
+function isNested(list: SyntaxNode): boolean {
+  for (let node = list.parent; node; node = node.parent) {
+    if (node.name === "BulletList" || node.name === "OrderedList") {
+      return true;
+    }
+  }
+  return false;
+}
 
 export class CheckboxWidget extends WidgetType {
   constructor(readonly checked: boolean) {
@@ -99,7 +114,7 @@ function decorateListMark(ref: SyntaxNodeRef, state: EditorState, out: Collector
     return;
   }
   if (list?.name === "BulletList") {
-    out.replace(ref.from, ref.to, bullet);
+    out.replace(ref.from, ref.to, isNested(list) ? nestedBullet : bullet);
     return;
   }
   out.mark(ref.from, ref.to, "cm-list-mark");

@@ -1148,7 +1148,7 @@ dependencies = [
 
 [[package]]
 name = "gcmd"
-version = "3.0.2"
+version = "0.3.2"
 dependencies = [
  "notify-debouncer-mini",
  "serde",

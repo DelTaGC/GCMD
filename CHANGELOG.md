@@ -7,6 +7,8 @@ GitHub release text and the notes shown in the in-app update banner
 ## 0.3.2
 
 - Add _Text to Table_ and _Table to Text_ features.
+- Use white bullet symbol for lists sublevels.
+- Fix Search highlighting style in inline code blocks. Table highlight the whole cell.
 
 ## 0.3.1
 

@@ -17,7 +17,7 @@ import { visitHeadings } from "./headings";
 import { visitHr } from "./hr";
 import { localImageHrefs } from "./image";
 import { visitInline } from "./inline";
-import { toggleTaskMarkerAt, visitLists } from "./lists";
+import { BulletWidget, toggleTaskMarkerAt, visitLists } from "./lists";
 import { visitMermaidBlocks } from "./mermaid";
 import { visitSpelling } from "./spelling";
 import { visitTable, visitTableBlocks } from "./table";
@@ -136,6 +136,20 @@ describe("lists", () => {
       "widget:BulletWidget@4-5",
       "mark:cm-list-mark@8-10",
     ]);
+  });
+
+  it("uses the hollow glyph from the second level on, under any kind of list", () => {
+    const doc = "- a\n  * b\n    + c\n1. d\n   - e\n\n> - f\n\nx";
+    const glyphs: string[] = [];
+    const cursor = run(visitLists, doc, doc.length).atomic.iter();
+    while (cursor.value) {
+      const { widget } = cursor.value.spec as { widget?: unknown };
+      if (widget instanceof BulletWidget) {
+        glyphs.push(widget.glyph);
+      }
+      cursor.next();
+    }
+    expect(glyphs).toEqual(["•", "◦", "◦", "◦", "•"]);
   });
 
   it("shows the raw bullet on the active line", () => {

@@ -37,6 +37,7 @@ import {
   type TableModel,
   type TableRow,
 } from "./tableModel";
+import { tableSearch } from "./tableSearch";
 
 /** Cell content ready for rendering; offsets are relative to the table start. */
 interface CellView {
@@ -515,5 +516,6 @@ const alignOnExit = ViewPlugin.fromClass(
 export const table: Extension = [
   livePreviewFamily(visitTable),
   blockFamily(visitTableBlocks),
+  tableSearch,
   alignOnExit,
 ];

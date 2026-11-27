@@ -327,6 +327,12 @@
 .cm-editor .cm-searchMatch-selected {
   background: var(--search-match-selected);
 }
+/* Cells of a rendered table with a match (livePreview/tableSearch.ts). */
+@media screen {
+  .cm-editor .cm-table-widget .cm-table-match {
+    background: var(--search-match);
+  }
+}
 
 /* Code fence language dropdown (replaces the opening fence when inactive) */
 .cm-code-select {
