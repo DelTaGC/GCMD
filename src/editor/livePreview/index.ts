@@ -9,6 +9,7 @@ import { codeFence } from "./codeFence";
 import { headings } from "./headings";
 import { hr } from "./hr";
 import { inline } from "./inline";
+import { listIndent } from "./listIndent";
 import { lists } from "./lists";
 import { mermaid } from "./mermaid";
 import { spelling } from "./spelling";
@@ -24,4 +25,7 @@ export const livePreview: Extension = [
   table,
   mermaid,
   spelling,
+  // Last, so its prefix box wraps what the other families draw in front of
+  // an item's text.
+  listIndent,
 ];

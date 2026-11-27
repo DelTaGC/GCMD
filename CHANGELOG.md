@@ -4,6 +4,10 @@ One section per release, newest first. The section of a version becomes the
 GitHub release text and the notes shown in the in-app update banner
 (`tools/release/notes.mjs`), so write it for users.
 
+## 0.3.3
+
+- Align line wraps and continuation lines under the existing above start line.
+
 ## 0.3.2
 
 - Add _Text to Table_ and _Table to Text_ features.

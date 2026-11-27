@@ -165,7 +165,7 @@ describe("lists", () => {
       "widget:CheckboxWidget@2-6",
       "hide@11-13",
       "widget:CheckboxWidget@13-17",
-      "mark:cm-task-done@13-21",
+      "mark:cm-task-done@17-21",
     ]);
   });
 

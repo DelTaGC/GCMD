@@ -16,6 +16,7 @@ import { assignKey, isCustomized, removeKey, resetCommand } from "../editor/keym
 import { setSpellcheck } from "../editor/spellcheck";
 import { isMac } from "../ipc/env";
 import type { AppearanceSettings, Settings } from "../ipc/settings";
+import { refreshListIndent } from "../editor/livePreview/listIndent";
 import { applyAppearance } from "./appearance";
 
 export interface SettingsPersistence {
@@ -116,6 +117,7 @@ export function createSettingsController(deps: SettingsControllerDeps): Settings
       onAppearance: (next) => {
         appearance = next;
         applyAppearance(appearance);
+        refreshListIndent(view);
         view.requestMeasure();
         persist.appearance(appearance).catch(logFailure("appearance"));
         refresh();
@@ -152,6 +154,7 @@ export function createSettingsController(deps: SettingsControllerDeps): Settings
   );
 
   applyAppearance(appearance);
+  refreshListIndent(view);
   setKeymapOverrides(view, keymap);
   setSpellcheck(view, spellcheck);
 

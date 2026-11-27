@@ -48,6 +48,11 @@ function isNested(list: SyntaxNode): boolean {
   return false;
 }
 
+/** The glyph that stands in for the markers of the bullet list `list`. */
+export function bulletGlyph(list: SyntaxNode): string {
+  return isNested(list) ? nestedBullet.glyph : bullet.glyph;
+}
+
 export class CheckboxWidget extends WidgetType {
   constructor(readonly checked: boolean) {
     super();
@@ -142,7 +147,9 @@ export const visitLists: NodeVisitor = (ref, state, out) => {
       return false;
     case "Task":
       if (/^\[[xX]\]/.test(state.doc.sliceString(ref.from, ref.from + 3))) {
-        out.mark(ref.from, ref.to, "cm-task-done");
+        // Starts at the text: a mark that began at the box would cut the
+        // prefix box of `listIndent` in two.
+        out.mark(Math.min(ref.from + 4, ref.to), ref.to, "cm-task-done");
       }
       return undefined;
     default:

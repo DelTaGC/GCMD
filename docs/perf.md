@@ -83,6 +83,11 @@ table it prints is the baseline:
 | keystroke in the middle     | 15 ms             | 6 ms                  |
 | cursor move                 | 0 ms              | 0 ms                  |
 
+The list hanging indent (`livePreview/listIndent.ts`, 2026-11-27) takes
+0.13 ms per update over 120 list lines, more than a screenful, in the dev
+build (`computeFamily` timed 500 times in a desktop browser). Text widths are
+cached per marker, so a keystroke measures nothing new.
+
 ### Memory after sustained editing
 
 In the browser setup above, 6 000 single-character transactions were

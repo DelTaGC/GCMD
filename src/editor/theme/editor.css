@@ -142,8 +142,30 @@
 .cm-list-mark {
   color: var(--fg-muted);
 }
+/* Hanging indent (livePreview/listIndent.ts sets --hang per line): wrapped
+   rows and continuation lines start where the item's text starts. */
+.cm-editor .cm-line.cm-list-hang {
+  padding-left: calc(2px + var(--hang));
+  text-indent: calc(-1 * var(--hang));
+}
+.cm-editor .cm-line.cm-list-lazy {
+  padding-left: calc(2px + var(--hang));
+}
+.cm-editor .cm-line.cm-quote-line.cm-list-hang,
+.cm-editor .cm-line.cm-quote-line.cm-list-lazy {
+  padding-left: calc(0.6em + var(--hang));
+}
+.cm-editor .cm-list-hang * {
+  text-indent: 0;
+}
+.cm-list-prefix {
+  display: inline-block;
+  white-space: pre;
+}
+/* CHECKBOX_PX in livePreview/listIndent.ts is this width plus margin. */
 .cm-task-checkbox {
-  margin: 0 0.45em 0 0;
+  width: 13px;
+  margin: 0 6px 0 0;
   vertical-align: -0.1em;
   accent-color: var(--accent);
   cursor: pointer;

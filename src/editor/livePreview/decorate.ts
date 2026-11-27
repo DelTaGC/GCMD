@@ -98,6 +98,24 @@ export class Collector {
     }
   }
 
+  /**
+   * Like `mark`, for a box that must also contain widgets or hidden markup
+   * that start at `from` or, with `inclusiveEnd`, end at `to`: only a mark
+   * that is inclusive on that side wraps those.
+   */
+  box(
+    from: number,
+    to: number,
+    className: string,
+    attributes: Record<string, string>,
+    inclusiveEnd: boolean,
+  ): void {
+    if (to > from) {
+      const spec = { class: className, attributes, inclusiveStart: true, inclusiveEnd };
+      this.all.push(Decoration.mark(spec).range(from, to));
+    }
+  }
+
   /** Adds a class to the line containing `pos`; duplicates are dropped. */
   line(pos: number, className: string, attributes?: Record<string, string>): void {
     const key = `${String(pos)}:${className}`;

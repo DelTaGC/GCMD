@@ -30,6 +30,15 @@ The rules are unit-tested in `src/editor/commands/lists.test.ts`.
 - [ ] Code blocks and tables inside the selection are unchanged; quoted lines keep their `>`.
 - [ ] One Ctrl+Z undoes the whole toggle.
 
+## Hanging indent
+
+- [ ] Wrapped rows of a bullet, numbered or task item start in the column of the item's first character, also nested and inside a quote.
+- [ ] Continuation lines of an item (indented or not, and a second paragraph) start in the same column.
+- [ ] With the cursor on the first line (raw marker shown) the rows still line up.
+- [ ] The alignment holds after changing the zoom and the text font in Settings.
+- [ ] Clicking a checkbox still toggles it; Up, Down, Home and End move normally on wrapped rows.
+- [ ] Print preview shows the same alignment.
+
 ## Line wrap
 
 - [ ] A thin bar under the editor: light margins, darker text column lined up with the text; the tooltip names the mode.

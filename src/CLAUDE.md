@@ -161,6 +161,11 @@ Root `CLAUDE.md` invariants apply; this file says how to honor them here.
   active-block rule to the cached list. Block ranges reach the cursor
   commands through the `blockRanges` facet. Never walk the whole tree on
   every selection change, and keep the sidebar outline debounced.
+- `livePreview/listIndent.ts` (hanging indent) mirrors what `lists.ts` and
+  `blockquote.ts` draw in front of an item's text to measure its width:
+  change them together. It must stay last in `livePreview/index.ts`, and a
+  mark starting inside an item's prefix and running past it would split the
+  prefix box.
 - A lazily loaded resource (language parser, renderer) that arrives after a
   computation dispatches `refreshLivePreview.of(null)` so families recompute.
 - Clicking a rendered widget moves the cursor into the block, which makes the
